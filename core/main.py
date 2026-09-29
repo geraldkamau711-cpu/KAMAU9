@@ -1,3 +1,4 @@
+from core.assessment_snapshot import AssessmentSnapshot
 from core.assessment_summary import AssessmentSummary
 from core.config import K9Config
 from core.context import AssessmentContext
@@ -93,6 +94,23 @@ class K9Core:
 
         return summary_builder.build(
             self.evidence.all()
+        )
+
+    def create_assessment_snapshot(self):
+        """Create an immutable snapshot of the current assessment."""
+
+        if self.context is None:
+            raise RuntimeError("No active assessment.")
+
+        summary = self.build_assessment_summary()
+
+        return AssessmentSnapshot(
+            assessment_id=self.context.assessment_id,
+            target=self.context.target,
+            started_at=self.context.started_at,
+            finding_count=summary["finding_count"],
+            severity_counts=summary["severity_counts"],
+            sources=summary["sources"],
         )
 
     def run_module(self, name: str, context: dict | None = None):
