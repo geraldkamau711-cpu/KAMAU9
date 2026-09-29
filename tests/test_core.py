@@ -27,6 +27,7 @@ def test_core_registers_module():
 def test_core_executes_module():
     core = K9Core()
     core.register_module(ExampleModule())
+    core.start_assessment("lab-target")
 
     result = core.run_module("example")
 
