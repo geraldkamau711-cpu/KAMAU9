@@ -1,3 +1,4 @@
+from core.assessment_summary import AssessmentSummary
 from core.config import K9Config
 from core.context import AssessmentContext
 from core.evidence import EvidenceStore
@@ -78,6 +79,21 @@ class K9Core:
         )
 
         return profile
+
+    def build_assessment_summary(self):
+        """Build a summary from the current assessment evidence."""
+
+        if self.context is None:
+            raise RuntimeError("No active assessment.")
+
+        summary_builder = AssessmentSummary(
+            target=self.context.target,
+            assessment_id=self.context.assessment_id,
+        )
+
+        return summary_builder.build(
+            self.evidence.all()
+        )
 
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
