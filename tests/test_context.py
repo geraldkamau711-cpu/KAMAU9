@@ -14,3 +14,22 @@ def test_context_ids_are_unique():
     second = AssessmentContext(target="lab-target")
 
     assert first.assessment_id != second.assessment_id
+
+
+def test_assessment_context_can_store_host_profile():
+    from core.host_profile import HostProfile
+
+    profile = HostProfile(
+        hostname="test-host",
+        operating_system="Linux",
+        os_release="test-release",
+        platform="test-platform",
+        architecture="x86_64",
+        python_version="3.14.0",
+    )
+
+    context = AssessmentContext(target="localhost")
+    context.host_profile = profile
+
+    assert context.host_profile is profile
+    assert context.host_profile.hostname == "test-host"

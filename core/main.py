@@ -1,6 +1,7 @@
 from core.config import K9Config
 from core.context import AssessmentContext
 from core.evidence import EvidenceStore
+from core.host_profile_builder import HostProfileBuilder
 from core.loader import ModuleLoader
 from core.logger import get_logger
 from core.registry import ModuleRegistry
@@ -37,6 +38,47 @@ class K9Core:
 
         return self.context
 
+    def build_host_profile(self):
+        """Build a unified HostProfile from local host intelligence."""
+
+        if self.context is None:
+            raise RuntimeError("No active assessment.")
+
+        host_result = self.run_module("host_intelligence")
+        interface_result = self.run_module("network_interfaces")
+
+        host_findings = host_result.get("findings", [])
+        interface_findings = interface_result.get("findings", [])
+
+        if not host_findings:
+            raise RuntimeError(
+                "Host intelligence produced no findings."
+            )
+
+        host_evidence = host_findings[0].evidence
+
+        interface_evidence = [
+            finding.evidence
+            for finding in interface_findings
+        ]
+
+        builder = HostProfileBuilder()
+
+        profile = builder.build(
+            host_finding=host_evidence,
+            interface_findings=interface_evidence,
+        )
+
+        self.context.host_profile = profile
+
+        self.logger.info(
+            "Host profile built: %s | interfaces=%d",
+            profile.hostname,
+            len(profile.interfaces),
+        )
+
+        return profile
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 
@@ -49,7 +91,10 @@ class K9Core:
             **(context or {}),
         }
 
-        self.logger.info("Executing module: %s", name)
+        self.logger.info(
+            "Executing module: %s",
+            name,
+        )
 
         result = module.run(execution_context)
 
