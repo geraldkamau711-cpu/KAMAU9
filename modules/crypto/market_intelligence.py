@@ -2,23 +2,42 @@ from __future__ import annotations
 
 from core.mode import K9Mode
 from core.module import K9Module
+from modules.crypto.market_data import (
+    CryptoMarketDataProvider,
+    CryptoMarketSnapshot,
+)
 
 
 class CryptoMarketIntelligence(K9Module):
-    """Base CRYPTO module for structured market intelligence."""
+    """CRYPTO module for structured market intelligence."""
 
     name = "crypto_market_intelligence"
     supported_modes = frozenset({K9Mode.CRYPTO, K9Mode.ANALYSIS})
 
     REQUIRED_CONTEXT = frozenset({"symbol"})
 
+    def __init__(self, provider: CryptoMarketDataProvider):
+        self.provider = provider
+
     def run(self, context):
         self._validate_context(context)
+
+        symbol = context["symbol"]
+        snapshot = self.provider.get_snapshot(symbol)
+
+        if not isinstance(snapshot, CryptoMarketSnapshot):
+            raise TypeError(
+                "Crypto market data provider must return "
+                "a CryptoMarketSnapshot."
+            )
 
         return {
             "module": self.name,
             "status": "ok",
-            "symbol": context["symbol"],
+            "symbol": snapshot.symbol,
+            "timestamp": snapshot.timestamp,
+            "price": snapshot.price,
+            "volume": snapshot.volume,
             "findings": [],
         }
 
