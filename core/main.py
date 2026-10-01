@@ -340,6 +340,31 @@ class K9Core:
 
         return AssessmentTrend().summarise(comparisons)
 
+    def summarise_assessment_trends_for_all_targets(
+        self,
+    ) -> dict[str, dict]:
+        """Summarise assessment trends for every persisted target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        snapshots = self.list_assessment_snapshots()
+
+        targets = sorted(
+            {
+                snapshot.target
+                for snapshot in snapshots
+            }
+        )
+
+        return {
+            target: self.summarise_assessment_trend_for_target(
+                target,
+            )
+            for target in targets
+        }
+
     def compare_latest_assessment_snapshots_for_all_targets(
         self,
     ) -> dict[str, dict]:

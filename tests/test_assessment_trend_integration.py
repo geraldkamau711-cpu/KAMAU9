@@ -110,3 +110,77 @@ def test_assessment_trend_component_matches_core_history_input():
     assert AssessmentTrend().summarise(comparisons)["latest_direction"] == (
         "decreased"
     )
+
+def test_k9_core_summarises_assessment_trends_for_all_targets(tmp_path):
+    core = K9Core()
+    core.persistence = core.persistence or __import__(
+        "core.assessment_persistence",
+        fromlist=["AssessmentPersistence"],
+    ).AssessmentPersistence(tmp_path)
+
+    snapshots = [
+        AssessmentSnapshot(
+            assessment_id="host-001",
+            target="host-a",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="host-002",
+            target="host-a",
+            started_at="2026-09-29T15:00:00+00:00",
+            finding_count=4,
+            severity_counts={"info": 4},
+            sources=["host"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="host-b-001",
+            target="host-b",
+            started_at="2026-09-29T14:30:00+00:00",
+            finding_count=5,
+            severity_counts={"warning": 5},
+            sources=["network"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="host-b-002",
+            target="host-b",
+            started_at="2026-09-29T15:30:00+00:00",
+            finding_count=3,
+            severity_counts={"warning": 3},
+            sources=["network"],
+        ),
+    ]
+
+    for snapshot in snapshots:
+        core.persistence.save(snapshot)
+
+    result = core.summarise_assessment_trends_for_all_targets()
+
+    assert result == {
+        "host-a": {
+            "comparison_count": 1,
+            "total_finding_count_change": 2,
+            "increases": 1,
+            "decreases": 0,
+            "unchanged": 0,
+            "latest_change": 2,
+            "latest_direction": "increased",
+            "severity_changes": {
+                "info": 2,
+            },
+        },
+        "host-b": {
+            "comparison_count": 1,
+            "total_finding_count_change": -2,
+            "increases": 0,
+            "decreases": 1,
+            "unchanged": 0,
+            "latest_change": -2,
+            "latest_direction": "decreased",
+            "severity_changes": {
+                "warning": -2,
+            },
+        },
+    }
