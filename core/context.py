@@ -33,3 +33,13 @@ class AssessmentContext:
         """Return the latest result for a module, or None if unavailable."""
 
         return self.module_results.get(name)
+
+    def has_module_result(self, name: str) -> bool:
+        """Return whether a result exists for the supplied module."""
+
+        return name in self.module_results
+
+    def list_module_results(self) -> list[str]:
+        """Return the names of modules with stored results."""
+
+        return list(self.module_results)

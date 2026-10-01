@@ -100,3 +100,40 @@ def test_store_module_result_rejects_non_dictionary_result():
         assert str(exc) == "Module result must be a dictionary."
     else:
         raise AssertionError("Expected TypeError")
+
+
+def test_has_module_result_returns_false_when_missing():
+    context = AssessmentContext(target="lab-target")
+
+    assert context.has_module_result("example") is False
+
+
+def test_has_module_result_returns_true_when_present():
+    context = AssessmentContext(target="lab-target")
+
+    context.store_module_result("example", {"status": "ok"})
+
+    assert context.has_module_result("example") is True
+
+
+def test_list_module_results_returns_stored_module_names():
+    context = AssessmentContext(target="lab-target")
+
+    context.store_module_result("host_intelligence", {"status": "ok"})
+    context.store_module_result("network_interfaces", {"status": "ok"})
+
+    assert context.list_module_results() == [
+        "host_intelligence",
+        "network_interfaces",
+    ]
+
+
+def test_list_module_results_returns_copy_of_names():
+    context = AssessmentContext(target="lab-target")
+
+    context.store_module_result("example", {"status": "ok"})
+
+    names = context.list_module_results()
+    names.append("another")
+
+    assert context.list_module_results() == ["example"]
