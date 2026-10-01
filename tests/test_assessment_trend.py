@@ -68,3 +68,85 @@ def test_assessment_trend_handles_empty_history():
         "latest_change": None,
         "latest_direction": "no_history",
     }
+
+
+def test_assessment_trend_summarises_severity_changes():
+    comparisons = [
+        {
+            "finding_count_change": 2,
+            "severity_counts": {
+                "previous": {
+                    "high": 1,
+                    "medium": 2,
+                    "low": 3,
+                },
+                "current": {
+                    "high": 2,
+                    "medium": 3,
+                    "low": 2,
+                },
+            },
+        },
+        {
+            "finding_count_change": -1,
+            "severity_counts": {
+                "previous": {
+                    "high": 2,
+                    "medium": 3,
+                    "low": 2,
+                },
+                "current": {
+                    "high": 1,
+                    "medium": 3,
+                    "low": 2,
+                },
+            },
+        },
+    ]
+
+    result = AssessmentTrend().summarise(comparisons)
+
+    assert result["severity_changes"] == {
+        "high": 0,
+        "low": -1,
+        "medium": 1,
+    }
+
+
+def test_assessment_trend_handles_missing_severity_levels():
+    comparisons = [
+        {
+            "finding_count_change": 1,
+            "severity_counts": {
+                "previous": {
+                    "high": 1,
+                },
+                "current": {
+                    "medium": 2,
+                },
+            },
+        },
+    ]
+
+    result = AssessmentTrend().summarise(comparisons)
+
+    assert result["severity_changes"] == {
+        "high": -1,
+        "medium": 2,
+    }
+
+
+def test_assessment_trend_handles_empty_severity_history():
+    comparisons = [
+        {
+            "finding_count_change": 0,
+            "severity_counts": {
+                "previous": {},
+                "current": {},
+            },
+        },
+    ]
+
+    result = AssessmentTrend().summarise(comparisons)
+
+    assert result["severity_changes"] == {}

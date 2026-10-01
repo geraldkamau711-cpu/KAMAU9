@@ -52,6 +52,9 @@ def test_k9_core_summarises_assessment_trend_for_target(tmp_path):
         "unchanged": 0,
         "latest_change": -1,
         "latest_direction": "decreased",
+        "severity_changes": {
+            "info": 1,
+        },
     }
 
 
