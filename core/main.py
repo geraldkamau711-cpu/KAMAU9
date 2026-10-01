@@ -16,7 +16,7 @@ class K9Core:
         self.config = config or K9Config()
         self.logger = get_logger("K9")
         self.registry = ModuleRegistry()
-        self.loader = ModuleLoader(self.registry)
+        self.loader = ModuleLoader(self.registry, mode=self.config.mode)
         self.evidence = EvidenceStore()
         self.context: AssessmentContext | None = None
 
