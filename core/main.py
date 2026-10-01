@@ -2,6 +2,7 @@ from core.assessment_comparison import AssessmentComparison
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_snapshot import AssessmentSnapshot
 from core.assessment_summary import AssessmentSummary
+from core.assessment_trend import AssessmentTrend
 from core.config import K9Config
 from core.context import AssessmentContext
 from core.evidence import EvidenceStore
@@ -321,6 +322,17 @@ class K9Core:
             )
 
         return comparisons
+
+    def summarise_assessment_trend_for_target(
+        self,
+        target: str,
+    ) -> dict:
+        """Summarise finding-count trends across a target's assessments."""
+        comparisons = self.compare_assessment_history_for_target(
+            target,
+        )
+
+        return AssessmentTrend().summarise(comparisons)
 
     def compare_latest_assessment_snapshots_for_all_targets(
         self,
