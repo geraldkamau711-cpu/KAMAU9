@@ -6,6 +6,9 @@ from core.module import K9Module
 
 class ContextCaptureModule(K9Module):
     name = "context_capture"
+    supported_modes = frozenset(
+        {K9Mode.LAB, K9Mode.ANALYSIS, K9Mode.CRYPTO}
+    )
 
     def __init__(self):
         self.received_context = None
@@ -13,6 +16,39 @@ class ContextCaptureModule(K9Module):
     def run(self, context):
         self.received_context = context
         return {"findings": []}
+
+
+class CryptoOnlyModule(K9Module):
+    name = "crypto_only"
+    supported_modes = frozenset({K9Mode.CRYPTO})
+
+    def run(self, context):
+        return {"findings": []}
+
+
+def test_core_registers_module_supported_by_active_mode():
+    core = K9Core(K9Config(mode=K9Mode.CRYPTO))
+    module = CryptoOnlyModule()
+
+    core.register_module(module)
+
+    assert core.registry.list_modules() == ["crypto_only"]
+
+
+def test_core_rejects_module_unsupported_by_active_mode():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = CryptoOnlyModule()
+
+    try:
+        core.register_module(module)
+    except ValueError as exc:
+        assert str(exc) == (
+            "Module 'crypto_only' does not support K9 mode 'lab'."
+        )
+    else:
+        raise AssertionError("Expected ValueError")
+
+    assert core.registry.list_modules() == []
 
 
 def test_core_loader_uses_configured_mode():

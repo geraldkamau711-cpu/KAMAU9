@@ -1,4 +1,6 @@
 from core.main import K9Core
+from core.module import K9Module
+from core.mode import K9Mode
 from modules.host.host_intelligence import HostIntelligenceModule
 from modules.host.network_interfaces import NetworkInterfaceModule
 from modules.host.host_profile_intelligence import (
@@ -107,8 +109,9 @@ def test_k9_summary_tracks_module_statuses():
     assert summary["modules_failed"] == 0
 
 
-class FailingSummaryModule:
+class FailingSummaryModule(K9Module):
     name = "failing_summary_module"
+    supported_modes = frozenset({K9Mode.LAB})
 
     def run(self, context):
         raise RuntimeError("summary module failure")

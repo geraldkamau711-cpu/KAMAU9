@@ -32,6 +32,12 @@ class K9Core:
         self.loader.load_from_file(path)
 
     def register_module(self, module):
+        if not module.supports_mode(self.config.mode):
+            raise ValueError(
+                f"Module {module.name!r} does not support K9 mode "
+                f"{self.config.mode.value!r}."
+            )
+
         self.registry.register(module)
 
     def start_assessment(self, target: str):
