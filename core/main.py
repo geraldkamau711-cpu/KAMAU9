@@ -265,6 +265,31 @@ class K9Core:
             current,
         )
 
+    def compare_latest_assessment_snapshots_for_target(
+        self,
+        target: str,
+    ) -> dict | None:
+        """Compare the two most recent persisted snapshots for a target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        snapshots = self.list_assessment_snapshots_for_target(target)
+
+        if len(snapshots) < 2:
+            return None
+
+        snapshots = sorted(
+            snapshots,
+            key=lambda snapshot: snapshot.started_at,
+        )
+
+        return self.compare_assessment_snapshots(
+            snapshots[-2].assessment_id,
+            snapshots[-1].assessment_id,
+        )
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 
