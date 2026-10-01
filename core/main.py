@@ -174,6 +174,18 @@ class K9Core:
 
         return self.persistence.list_assessments()
 
+    def list_assessment_snapshots(self) -> list[AssessmentSnapshot]:
+        """Load all persisted assessment snapshots in deterministic order."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        return [
+            self.persistence.load(assessment_id)
+            for assessment_id in self.persistence.list_assessments()
+        ]
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 
