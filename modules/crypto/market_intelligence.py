@@ -6,6 +6,7 @@ from modules.crypto.market_data import (
     CryptoMarketDataProvider,
     CryptoMarketSnapshot,
 )
+from modules.crypto.observation import CryptoMarketObservation
 
 
 class CryptoMarketIntelligence(K9Module):
@@ -31,13 +32,22 @@ class CryptoMarketIntelligence(K9Module):
                 "a CryptoMarketSnapshot."
             )
 
+        observation = CryptoMarketObservation(
+            symbol=snapshot.symbol,
+            timestamp=snapshot.timestamp,
+            price=snapshot.price,
+            volume=snapshot.volume,
+            source=type(self.provider).__name__,
+        )
+
         return {
             "module": self.name,
             "status": "ok",
-            "symbol": snapshot.symbol,
-            "timestamp": snapshot.timestamp,
-            "price": snapshot.price,
-            "volume": snapshot.volume,
+            "symbol": observation.symbol,
+            "timestamp": observation.timestamp,
+            "price": observation.price,
+            "volume": observation.volume,
+            "observation": observation,
             "findings": [],
         }
 

@@ -8,6 +8,7 @@ from modules.crypto.market_data import (
     CryptoMarketSnapshot,
 )
 from modules.crypto.market_intelligence import CryptoMarketIntelligence
+from modules.crypto.observation import CryptoMarketObservation
 
 
 class FakeMarketDataProvider(CryptoMarketDataProvider):
@@ -79,6 +80,48 @@ def test_crypto_module_returns_market_snapshot_data():
     assert result["findings"] == []
 
 
+def test_crypto_module_returns_structured_observation():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+        }
+    )
+
+    observation = result["observation"]
+
+    assert isinstance(observation, CryptoMarketObservation)
+    assert observation.symbol == "BTC/USDT"
+    assert observation.timestamp == _snapshot().timestamp
+    assert observation.price == 120000.50
+    assert observation.volume == 42.75
+    assert observation.source == "FakeMarketDataProvider"
+    assert observation.observation_type == "market_snapshot"
+
+
+def test_crypto_module_observation_matches_snapshot():
+    snapshot = _snapshot()
+    provider = FakeMarketDataProvider(snapshot)
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+        }
+    )
+
+    observation = result["observation"]
+
+    assert observation.symbol == snapshot.symbol
+    assert observation.timestamp == snapshot.timestamp
+    assert observation.price == snapshot.price
+    assert observation.volume == snapshot.volume
+
+
 def test_crypto_module_accepts_analysis_mode():
     provider = FakeMarketDataProvider(_snapshot())
     module = CryptoMarketIntelligence(provider)
@@ -91,6 +134,7 @@ def test_crypto_module_accepts_analysis_mode():
     )
 
     assert result["status"] == "ok"
+    assert isinstance(result["observation"], CryptoMarketObservation)
 
 
 def test_crypto_module_rejects_lab_mode():
