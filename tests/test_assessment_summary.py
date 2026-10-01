@@ -125,3 +125,63 @@ def test_summary_deduplicates_module_names():
         "host_intelligence",
         "network_interfaces",
     ]
+
+
+def test_summary_tracks_modules_with_findings():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [
+            make_finding("Host issue", "warning", "host_intelligence"),
+            make_finding("Interface issue", "info", "network_interfaces"),
+        ],
+        modules=[
+            "host_intelligence",
+            "network_interfaces",
+            "empty_module",
+        ],
+    )
+
+    assert result["modules_with_findings"] == [
+        "host_intelligence",
+        "network_interfaces",
+    ]
+
+
+def test_summary_tracks_modules_without_findings():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [
+            make_finding("Host issue", "warning", "host_intelligence"),
+        ],
+        modules=[
+            "host_intelligence",
+            "network_interfaces",
+            "empty_module",
+        ],
+    )
+
+    assert result["modules_without_findings"] == [
+        "empty_module",
+        "network_interfaces",
+    ]
+
+
+def test_summary_empty_modules_have_no_status():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build([])
+
+    assert result["modules"] == []
+    assert result["modules_with_findings"] == []
+    assert result["modules_without_findings"] == []
