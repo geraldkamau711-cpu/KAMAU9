@@ -104,3 +104,64 @@ def test_k9_core_persistence_is_optional():
     k9 = K9Core()
 
     assert k9.persistence is None
+
+
+def test_k9_core_can_save_current_assessment_snapshot(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+    k9 = K9Core(persistence=persistence)
+
+    k9.start_assessment("localhost")
+
+    snapshot = k9.save_assessment_snapshot()
+
+    assert snapshot.assessment_id == k9.context.assessment_id
+    assert (tmp_path / f"{snapshot.assessment_id}.json").exists()
+
+
+def test_k9_core_can_load_persisted_assessment_snapshot(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    snapshot = AssessmentSnapshot(
+        assessment_id="assessment-load-001",
+        target="localhost",
+        started_at="2026-09-29T16:00:00+00:00",
+        finding_count=4,
+        severity_counts={"info": 3, "warning": 1},
+        sources=["host_intelligence"],
+        modules_total=2,
+        modules_succeeded=2,
+        modules_failed=0,
+    )
+
+    persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    loaded = k9.load_assessment_snapshot("assessment-load-001")
+
+    assert loaded == snapshot
+    assert k9.context is None
+
+
+def test_k9_core_save_snapshot_requires_persistence():
+    k9 = K9Core()
+
+    k9.start_assessment("localhost")
+
+    try:
+        k9.save_assessment_snapshot()
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_load_snapshot_requires_persistence():
+    k9 = K9Core()
+
+    try:
+        k9.load_assessment_snapshot("assessment-missing")
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")

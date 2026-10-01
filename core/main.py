@@ -141,6 +141,30 @@ class K9Core:
             modules_failed=summary["modules_failed"],
         )
 
+    def save_assessment_snapshot(self) -> AssessmentSnapshot:
+        """Create and persist the current assessment snapshot."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        snapshot = self.create_assessment_snapshot()
+        self.persistence.save(snapshot)
+
+        return snapshot
+
+    def load_assessment_snapshot(
+        self,
+        assessment_id: str,
+    ) -> AssessmentSnapshot:
+        """Load a persisted assessment snapshot."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        return self.persistence.load(assessment_id)
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 
