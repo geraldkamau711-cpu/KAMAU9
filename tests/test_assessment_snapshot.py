@@ -15,6 +15,9 @@ def test_snapshot_stores_assessment_identity():
             "host_intelligence",
             "network_interfaces",
         ],
+        modules_total=2,
+        modules_succeeded=2,
+        modules_failed=0,
     )
 
     assert snapshot.assessment_id == "assessment-123"
@@ -36,6 +39,9 @@ def test_snapshot_stores_assessment_statistics():
             "host_intelligence",
             "network_interfaces",
         ],
+        modules_total=3,
+        modules_succeeded=2,
+        modules_failed=1,
     )
 
     assert snapshot.finding_count == 3
@@ -47,6 +53,9 @@ def test_snapshot_stores_assessment_statistics():
         "host_intelligence",
         "network_interfaces",
     ]
+    assert snapshot.modules_total == 3
+    assert snapshot.modules_succeeded == 2
+    assert snapshot.modules_failed == 1
 
 
 def test_snapshot_serialises_to_dict():
@@ -57,6 +66,9 @@ def test_snapshot_serialises_to_dict():
         finding_count=1,
         severity_counts={"info": 1},
         sources=["host_intelligence"],
+        modules_total=1,
+        modules_succeeded=1,
+        modules_failed=0,
     )
 
     result = snapshot.to_dict()
@@ -68,4 +80,7 @@ def test_snapshot_serialises_to_dict():
         "finding_count": 1,
         "severity_counts": {"info": 1},
         "sources": ["host_intelligence"],
+        "modules_total": 1,
+        "modules_succeeded": 1,
+        "modules_failed": 0,
     }
