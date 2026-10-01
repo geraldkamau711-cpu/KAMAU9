@@ -122,6 +122,7 @@ class K9Core:
         execution_context = {
             "target": self.context.target,
             "assessment_id": self.context.assessment_id,
+            "module_results": self.context.module_result_view(),
             **(context or {}),
             "mode": self.config.mode,
         }

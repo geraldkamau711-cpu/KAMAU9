@@ -108,3 +108,43 @@ def test_run_module_stores_result_through_context_api():
     result = core.run_module(module.name)
 
     assert core.context.get_module_result(module.name) is result
+
+
+def test_run_module_passes_read_only_module_result_view():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = ContextCaptureModule()
+
+    core.register_module(module)
+    core.start_assessment("test-target")
+
+    core.run_module(module.name)
+
+    view = module.received_context["module_results"]
+
+    assert view.has(module.name) is True
+    assert view.get(module.name)["findings"] == []
+
+
+def test_run_module_module_result_view_reflects_previous_results():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+
+    first = ContextCaptureModule()
+    first.name = "first_module"
+
+    second = ContextCaptureModule()
+    second.name = "second_module"
+
+    core.register_module(first)
+    core.register_module(second)
+    core.start_assessment("test-target")
+
+    core.run_module(first.name)
+    core.run_module(second.name)
+
+    view = second.received_context["module_results"]
+
+    assert view.has("first_module") is True
+    assert view.get("first_module") == {
+        "findings": [],
+    }
+    assert view.has("second_module") is True
