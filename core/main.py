@@ -165,6 +165,15 @@ class K9Core:
 
         return self.persistence.load(assessment_id)
 
+    def list_assessments(self) -> list[str]:
+        """List persisted assessment IDs."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        return self.persistence.list_assessments()
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 

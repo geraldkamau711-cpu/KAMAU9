@@ -212,3 +212,36 @@ def test_list_assessments_ignores_non_json_files(tmp_path):
     )
 
     assert persistence.list_assessments() == ["assessment-json"]
+
+
+def test_k9_core_can_list_persisted_assessments(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    for assessment_id in ("assessment-002", "assessment-001"):
+        snapshot = AssessmentSnapshot(
+            assessment_id=assessment_id,
+            target="localhost",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        )
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    assert k9.list_assessments() == [
+        "assessment-001",
+        "assessment-002",
+    ]
+
+
+def test_k9_core_list_assessments_requires_persistence():
+    k9 = K9Core()
+
+    try:
+        k9.list_assessments()
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")
