@@ -33,3 +33,21 @@ def test_assessment_context_can_store_host_profile():
 
     assert context.host_profile is profile
     assert context.host_profile.hostname == "test-host"
+
+
+def test_assessment_context_initialises_empty_module_results():
+    context = AssessmentContext(target="lab-target")
+
+    assert context.module_results == {}
+
+
+def test_assessment_context_module_results_are_isolated():
+    first = AssessmentContext(target="lab-target")
+    second = AssessmentContext(target="lab-target")
+
+    first.module_results["example"] = {"status": "ok"}
+
+    assert first.module_results == {
+        "example": {"status": "ok"},
+    }
+    assert second.module_results == {}

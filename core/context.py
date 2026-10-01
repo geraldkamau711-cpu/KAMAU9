@@ -16,3 +16,4 @@ class AssessmentContext:
     )
     metadata: dict = field(default_factory=dict)
     host_profile: HostProfile | None = None
+    module_results: dict[str, dict] = field(default_factory=dict)

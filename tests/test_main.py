@@ -67,3 +67,32 @@ def test_run_module_does_not_allow_mode_override():
     core.run_module(module.name, {"mode": K9Mode.LAB})
 
     assert module.received_context["mode"] is K9Mode.CRYPTO
+
+
+def test_run_module_stores_structured_result_in_assessment_context():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = ContextCaptureModule()
+
+    core.register_module(module)
+    core.start_assessment("test-target")
+
+    result = core.run_module(module.name)
+
+    assert core.context.module_results[module.name] is result
+    assert core.context.module_results[module.name] == {
+        "findings": [],
+    }
+
+
+def test_run_module_updates_existing_module_result():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = ContextCaptureModule()
+
+    core.register_module(module)
+    core.start_assessment("test-target")
+
+    first = core.run_module(module.name)
+    second = core.run_module(module.name)
+
+    assert core.context.module_results[module.name] is second
+    assert core.context.module_results[module.name] is not first

@@ -133,6 +133,13 @@ class K9Core:
 
         result = module.run(execution_context)
 
+        if not isinstance(result, dict):
+            raise TypeError(
+                "K9 modules must return a dictionary result."
+            )
+
+        self.context.module_results[name] = result
+
         for finding in result.get("findings", []):
             self.evidence.add(finding)
 
