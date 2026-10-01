@@ -61,3 +61,32 @@ def test_snapshot_persistence_preserves_module_execution_counts(tmp_path):
     assert loaded.modules_total == 3
     assert loaded.modules_succeeded == 2
     assert loaded.modules_failed == 1
+
+
+def test_snapshot_persistence_loads_legacy_snapshot_without_module_counts(
+    tmp_path,
+):
+    legacy_snapshot = {
+        "assessment_id": "assessment-legacy",
+        "target": "localhost",
+        "started_at": "2026-09-29T15:00:00+00:00",
+        "finding_count": 2,
+        "severity_counts": {"info": 2},
+        "sources": ["host_intelligence"],
+    }
+
+    path = tmp_path / "assessment-legacy.json"
+    path.write_text(
+        __import__("json").dumps(legacy_snapshot),
+        encoding="utf-8",
+    )
+
+    persistence = AssessmentPersistence(tmp_path)
+
+    loaded = persistence.load("assessment-legacy")
+
+    assert loaded.assessment_id == "assessment-legacy"
+    assert loaded.finding_count == 2
+    assert loaded.modules_total == 0
+    assert loaded.modules_succeeded == 0
+    assert loaded.modules_failed == 0
