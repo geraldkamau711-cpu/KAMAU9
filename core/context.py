@@ -17,3 +17,19 @@ class AssessmentContext:
     metadata: dict = field(default_factory=dict)
     host_profile: HostProfile | None = None
     module_results: dict[str, dict] = field(default_factory=dict)
+
+    def store_module_result(self, name: str, result: dict) -> None:
+        """Store the latest structured result produced by a module."""
+
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("Module result name must be a non-empty string.")
+
+        if not isinstance(result, dict):
+            raise TypeError("Module result must be a dictionary.")
+
+        self.module_results[name] = result
+
+    def get_module_result(self, name: str) -> dict | None:
+        """Return the latest result for a module, or None if unavailable."""
+
+        return self.module_results.get(name)

@@ -51,3 +51,52 @@ def test_assessment_context_module_results_are_isolated():
         "example": {"status": "ok"},
     }
     assert second.module_results == {}
+
+
+def test_store_module_result_stores_result():
+    context = AssessmentContext(target="lab-target")
+    result = {"findings": [], "status": "ok"}
+
+    context.store_module_result("example", result)
+
+    assert context.module_results["example"] is result
+
+
+def test_store_module_result_replaces_existing_result():
+    context = AssessmentContext(target="lab-target")
+    first = {"status": "first"}
+    second = {"status": "second"}
+
+    context.store_module_result("example", first)
+    context.store_module_result("example", second)
+
+    assert context.get_module_result("example") is second
+    assert context.get_module_result("example") is not first
+
+
+def test_get_module_result_returns_none_for_unknown_module():
+    context = AssessmentContext(target="lab-target")
+
+    assert context.get_module_result("unknown") is None
+
+
+def test_store_module_result_rejects_empty_name():
+    context = AssessmentContext(target="lab-target")
+
+    try:
+        context.store_module_result("", {"findings": []})
+    except ValueError as exc:
+        assert str(exc) == "Module result name must be a non-empty string."
+    else:
+        raise AssertionError("Expected ValueError")
+
+
+def test_store_module_result_rejects_non_dictionary_result():
+    context = AssessmentContext(target="lab-target")
+
+    try:
+        context.store_module_result("example", [])
+    except TypeError as exc:
+        assert str(exc) == "Module result must be a dictionary."
+    else:
+        raise AssertionError("Expected TypeError")

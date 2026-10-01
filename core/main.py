@@ -138,7 +138,7 @@ class K9Core:
                 "K9 modules must return a dictionary result."
             )
 
-        self.context.module_results[name] = result
+        self.context.store_module_result(name, result)
 
         for finding in result.get("findings", []):
             self.evidence.add(finding)

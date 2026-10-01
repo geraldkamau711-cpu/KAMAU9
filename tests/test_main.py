@@ -96,3 +96,15 @@ def test_run_module_updates_existing_module_result():
 
     assert core.context.module_results[module.name] is second
     assert core.context.module_results[module.name] is not first
+
+
+def test_run_module_stores_result_through_context_api():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = ContextCaptureModule()
+
+    core.register_module(module)
+    core.start_assessment("test-target")
+
+    result = core.run_module(module.name)
+
+    assert core.context.get_module_result(module.name) is result
