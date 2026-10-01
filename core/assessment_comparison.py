@@ -25,6 +25,18 @@ class AssessmentComparison:
                 "previous": dict(previous.severity_counts),
                 "current": dict(current.severity_counts),
             },
+            "module_execution_counts": {
+                "previous": {
+                    "total": previous.modules_total,
+                    "succeeded": previous.modules_succeeded,
+                    "failed": previous.modules_failed,
+                },
+                "current": {
+                    "total": current.modules_total,
+                    "succeeded": current.modules_succeeded,
+                    "failed": current.modules_failed,
+                },
+            },
             "new_sources": sorted(current_sources - previous_sources),
             "removed_sources": sorted(previous_sources - current_sources),
         }
