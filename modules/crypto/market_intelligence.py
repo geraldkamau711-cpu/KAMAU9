@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from core.finding import Finding
 from core.mode import K9Mode
 from core.module import K9Module
+from modules.crypto.evidence import CryptoObservationEvidence
 from modules.crypto.market_data import (
     CryptoMarketDataProvider,
     CryptoMarketSnapshot,
@@ -17,8 +19,13 @@ class CryptoMarketIntelligence(K9Module):
 
     REQUIRED_CONTEXT = frozenset({"symbol"})
 
-    def __init__(self, provider: CryptoMarketDataProvider):
+    def __init__(
+        self,
+        provider: CryptoMarketDataProvider,
+        evidence_adapter: CryptoObservationEvidence | None = None,
+    ):
         self.provider = provider
+        self.evidence_adapter = evidence_adapter or CryptoObservationEvidence()
 
     def run(self, context):
         self._validate_context(context)
@@ -40,6 +47,18 @@ class CryptoMarketIntelligence(K9Module):
             source=type(self.provider).__name__,
         )
 
+        target = context.get("target", observation.symbol)
+
+        finding = self.evidence_adapter.to_finding(
+            observation,
+            target=target,
+        )
+
+        if not isinstance(finding, Finding):
+            raise TypeError(
+                "Crypto evidence adapter must return a Finding."
+            )
+
         return {
             "module": self.name,
             "status": "ok",
@@ -48,7 +67,7 @@ class CryptoMarketIntelligence(K9Module):
             "price": observation.price,
             "volume": observation.volume,
             "observation": observation,
-            "findings": [],
+            "findings": [finding],
         }
 
     def _validate_context(self, context):

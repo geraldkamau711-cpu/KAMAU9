@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 
 import pytest
 
+from core.finding import Finding
 from core.mode import K9Mode
+from modules.crypto.evidence import CryptoObservationEvidence
 from modules.crypto.market_data import (
     CryptoMarketDataProvider,
     CryptoMarketSnapshot,
@@ -77,7 +79,6 @@ def test_crypto_module_returns_market_snapshot_data():
     assert result["timestamp"] == _snapshot().timestamp
     assert result["price"] == 120000.50
     assert result["volume"] == 42.75
-    assert result["findings"] == []
 
 
 def test_crypto_module_returns_structured_observation():
@@ -122,6 +123,119 @@ def test_crypto_module_observation_matches_snapshot():
     assert observation.volume == snapshot.volume
 
 
+def test_crypto_module_returns_finding():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+        }
+    )
+
+    assert len(result["findings"]) == 1
+    assert isinstance(result["findings"][0], Finding)
+
+
+def test_crypto_module_finding_contains_observation_evidence():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "target": "crypto-assessment-001",
+        }
+    )
+
+    finding = result["findings"][0]
+
+    assert finding.title == "Crypto market observation: BTC/USDT"
+    assert finding.severity == "info"
+    assert finding.source == "crypto_market_intelligence"
+    assert finding.target == "crypto-assessment-001"
+    assert finding.evidence["symbol"] == "BTC/USDT"
+    assert finding.evidence["price"] == 120000.50
+    assert finding.evidence["volume"] == 42.75
+    assert finding.evidence["source"] == "FakeMarketDataProvider"
+
+
+def test_crypto_module_uses_symbol_when_target_is_missing():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+        }
+    )
+
+    assert result["findings"][0].target == "BTC/USDT"
+
+
+def test_crypto_module_accepts_custom_evidence_adapter():
+    class RecordingAdapter(CryptoObservationEvidence):
+        def __init__(self):
+            self.received_observation = None
+            self.received_target = None
+
+        def to_finding(self, observation, target):
+            self.received_observation = observation
+            self.received_target = target
+            return Finding(
+                title="Custom crypto finding",
+                severity="info",
+                description="Custom",
+                source="custom",
+                target=target,
+            )
+
+    adapter = RecordingAdapter()
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        evidence_adapter=adapter,
+    )
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "target": "custom-target",
+        }
+    )
+
+    assert result["findings"][0].title == "Custom crypto finding"
+    assert adapter.received_observation.symbol == "BTC/USDT"
+    assert adapter.received_target == "custom-target"
+
+
+def test_crypto_module_rejects_invalid_evidence_adapter_result():
+    class InvalidAdapter:
+        def to_finding(self, observation, target):
+            return {"target": target}
+
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        evidence_adapter=InvalidAdapter(),
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="must return a Finding",
+    ):
+        module.run(
+            {
+                "symbol": "BTC/USDT",
+                "mode": K9Mode.CRYPTO,
+            }
+        )
+
+
 def test_crypto_module_accepts_analysis_mode():
     provider = FakeMarketDataProvider(_snapshot())
     module = CryptoMarketIntelligence(provider)
@@ -135,6 +249,7 @@ def test_crypto_module_accepts_analysis_mode():
 
     assert result["status"] == "ok"
     assert isinstance(result["observation"], CryptoMarketObservation)
+    assert isinstance(result["findings"][0], Finding)
 
 
 def test_crypto_module_rejects_lab_mode():
