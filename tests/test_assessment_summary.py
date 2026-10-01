@@ -73,3 +73,55 @@ def test_summary_tracks_unique_sources():
         "module_a",
         "module_b",
     ]
+
+
+def test_empty_summary_has_no_modules():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build([])
+
+    assert result["modules"] == []
+
+
+def test_summary_tracks_executed_modules():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [],
+        modules=[
+            "network_interfaces",
+            "host_intelligence",
+        ],
+    )
+
+    assert result["modules"] == [
+        "host_intelligence",
+        "network_interfaces",
+    ]
+
+
+def test_summary_deduplicates_module_names():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [],
+        modules=[
+            "host_intelligence",
+            "host_intelligence",
+            "network_interfaces",
+        ],
+    )
+
+    assert result["modules"] == [
+        "host_intelligence",
+        "network_interfaces",
+    ]

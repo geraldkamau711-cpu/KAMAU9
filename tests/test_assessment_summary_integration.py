@@ -46,3 +46,21 @@ def test_k9_summary_reflects_actual_evidence():
 
     assert summary["finding_count"] == k9.evidence.count()
     assert summary["finding_count"] >= 2
+
+
+def test_k9_summary_tracks_executed_modules():
+    k9 = K9Core()
+
+    k9.register_module(HostIntelligenceModule())
+    k9.register_module(NetworkInterfaceModule())
+
+    k9.start_assessment("localhost")
+
+    k9.build_host_profile()
+
+    summary = k9.build_assessment_summary()
+
+    assert summary["modules"] == [
+        "host_intelligence",
+        "network_interfaces",
+    ]

@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 from core.finding import Finding
 
 
@@ -8,7 +10,11 @@ class AssessmentSummary:
         self.target = target
         self.assessment_id = assessment_id
 
-    def build(self, findings: list[Finding]) -> dict:
+    def build(
+        self,
+        findings: list[Finding],
+        modules: Iterable[str] = (),
+    ) -> dict:
         severity_counts = {}
         sources = set()
 
@@ -24,4 +30,5 @@ class AssessmentSummary:
             "finding_count": len(findings),
             "severity_counts": severity_counts,
             "sources": sorted(sources),
+            "modules": sorted(set(modules)),
         }
