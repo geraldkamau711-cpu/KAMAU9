@@ -102,6 +102,9 @@ def test_k9_summary_tracks_module_statuses():
         "host_intelligence": "success",
         "network_interfaces": "success",
     }
+    assert summary["modules_total"] == 2
+    assert summary["modules_succeeded"] == 2
+    assert summary["modules_failed"] == 0
 
 
 class FailingSummaryModule:
@@ -136,3 +139,6 @@ def test_k9_failed_module_appears_in_assessment_summary():
     assert summary["module_statuses"] == {
         "failing_summary_module": "failed",
     }
+    assert summary["modules_total"] == 1
+    assert summary["modules_succeeded"] == 0
+    assert summary["modules_failed"] == 1
