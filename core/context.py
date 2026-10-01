@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from uuid import uuid4
 
 from core.host_profile import HostProfile
+from core.module_result import ModuleResultView
 
 
 @dataclass
@@ -43,3 +44,8 @@ class AssessmentContext:
         """Return the names of modules with stored results."""
 
         return list(self.module_results)
+
+    def module_result_view(self) -> ModuleResultView:
+        """Return read-only access to stored module results."""
+
+        return ModuleResultView(self.module_results)
