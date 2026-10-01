@@ -1,3 +1,4 @@
+from core.assessment_comparison import AssessmentComparison
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_snapshot import AssessmentSnapshot
 from core.assessment_summary import AssessmentSummary
@@ -239,6 +240,29 @@ class K9Core:
         return max(
             snapshots,
             key=lambda snapshot: snapshot.started_at,
+        )
+
+    def compare_assessment_snapshots(
+        self,
+        previous_assessment_id: str,
+        current_assessment_id: str,
+    ) -> dict:
+        """Compare two persisted assessment snapshots."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        previous = self.load_assessment_snapshot(
+            previous_assessment_id,
+        )
+        current = self.load_assessment_snapshot(
+            current_assessment_id,
+        )
+
+        return AssessmentComparison().compare(
+            previous,
+            current,
         )
 
     def run_module(self, name: str, context: dict | None = None):

@@ -479,3 +479,75 @@ def test_k9_core_latest_target_snapshot_requires_persistence():
         assert str(exc) == "Assessment persistence is not configured."
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_can_compare_persisted_assessment_snapshots(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    previous = AssessmentSnapshot(
+        assessment_id="assessment-001",
+        target="localhost",
+        started_at="2026-09-29T12:00:00+00:00",
+        finding_count=2,
+        severity_counts={"info": 2},
+        sources=["host_intelligence"],
+        modules_total=2,
+        modules_succeeded=2,
+        modules_failed=0,
+    )
+
+    current = AssessmentSnapshot(
+        assessment_id="assessment-002",
+        target="localhost",
+        started_at="2026-09-29T13:00:00+00:00",
+        finding_count=4,
+        severity_counts={"info": 3, "low": 1},
+        sources=["host_intelligence", "network_interfaces"],
+        modules_total=3,
+        modules_succeeded=2,
+        modules_failed=1,
+    )
+
+    persistence.save(previous)
+    persistence.save(current)
+
+    k9 = K9Core(persistence=persistence)
+
+    result = k9.compare_assessment_snapshots(
+        "assessment-001",
+        "assessment-002",
+    )
+
+    assert result["previous_assessment_id"] == "assessment-001"
+    assert result["current_assessment_id"] == "assessment-002"
+    assert result["finding_count_change"] == 2
+    assert result["new_sources"] == ["network_interfaces"]
+    assert result["removed_sources"] == []
+    assert result["module_execution_counts"] == {
+        "previous": {
+            "total": 2,
+            "succeeded": 2,
+            "failed": 0,
+        },
+        "current": {
+            "total": 3,
+            "succeeded": 2,
+            "failed": 1,
+        },
+    }
+
+
+def test_k9_core_compare_assessment_snapshots_requires_persistence():
+    k9 = K9Core()
+
+    try:
+        k9.compare_assessment_snapshots(
+            "assessment-001",
+            "assessment-002",
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")
