@@ -165,3 +165,50 @@ def test_k9_core_load_snapshot_requires_persistence():
         assert str(exc) == "Assessment persistence is not configured."
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_list_assessments_returns_empty_list_when_directory_is_empty(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    assert persistence.list_assessments() == []
+
+
+def test_list_assessments_returns_saved_assessment_ids(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    for assessment_id in ("assessment-002", "assessment-001"):
+        snapshot = AssessmentSnapshot(
+            assessment_id=assessment_id,
+            target="localhost",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        )
+        persistence.save(snapshot)
+
+    assert persistence.list_assessments() == [
+        "assessment-001",
+        "assessment-002",
+    ]
+
+
+def test_list_assessments_ignores_non_json_files(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    snapshot = AssessmentSnapshot(
+        assessment_id="assessment-json",
+        target="localhost",
+        started_at="2026-09-29T12:00:00+00:00",
+        finding_count=1,
+        severity_counts={"info": 1},
+        sources=["host_intelligence"],
+    )
+    persistence.save(snapshot)
+
+    (tmp_path / "notes.txt").write_text(
+        "not an assessment",
+        encoding="utf-8",
+    )
+
+    assert persistence.list_assessments() == ["assessment-json"]

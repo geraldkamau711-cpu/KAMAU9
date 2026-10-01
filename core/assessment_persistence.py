@@ -45,3 +45,12 @@ class AssessmentPersistence:
             modules_succeeded=data.get("modules_succeeded", 0),
             modules_failed=data.get("modules_failed", 0),
         )
+
+    def list_assessments(self) -> list[str]:
+        """Return persisted assessment IDs in deterministic order."""
+
+        return sorted(
+            path.stem
+            for path in self.directory.glob("*.json")
+            if path.is_file()
+        )
