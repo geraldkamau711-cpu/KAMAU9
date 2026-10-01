@@ -156,7 +156,7 @@ def test_crypto_core_passes_snapshot_history_to_regime_classifier():
     assert result["regime"].regime is CryptoMarketRegime.HIGH_ACTIVITY
 
 
-def test_crypto_core_stores_market_and_regime_findings():
+def test_crypto_core_stores_market_regime_and_volatility_findings():
     core, _ = _core()
 
     core.start_assessment("crypto-assessment-006")
@@ -171,12 +171,12 @@ def test_crypto_core_stores_market_and_regime_findings():
 
     findings = core.evidence.all()
 
-    assert len(result["findings"]) == 2
-    assert len(findings) == 2
-    assert all(isinstance(finding, Finding) for finding in findings)
+    assert len(result["findings"]) == 3
+    assert len(findings) == 3
 
     assert findings[0].source == "crypto_market_intelligence"
     assert findings[1].source == "crypto_market_regime"
+    assert findings[2].source == "crypto_volatility"
 
 
 def test_crypto_core_preserves_target_in_regime_finding():

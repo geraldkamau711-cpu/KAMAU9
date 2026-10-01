@@ -13,6 +13,10 @@ from modules.crypto.regime import (
     CryptoMarketRegimeClassifier,
     CryptoMarketRegimeObservation,
 )
+from modules.crypto.volatility import (
+    CryptoVolatilityClassifier,
+    CryptoVolatilityObservation,
+)
 
 
 class CryptoMarketIntelligence(K9Module):
@@ -28,11 +32,15 @@ class CryptoMarketIntelligence(K9Module):
         provider: CryptoMarketDataProvider,
         evidence_adapter: CryptoObservationEvidence | None = None,
         regime_classifier: CryptoMarketRegimeClassifier | None = None,
+        volatility_classifier: CryptoVolatilityClassifier | None = None,
     ):
         self.provider = provider
         self.evidence_adapter = evidence_adapter or CryptoObservationEvidence()
         self.regime_classifier = (
             regime_classifier or CryptoMarketRegimeClassifier()
+        )
+        self.volatility_classifier = (
+            volatility_classifier or CryptoVolatilityClassifier()
         )
 
     def run(self, context):
@@ -100,6 +108,27 @@ class CryptoMarketIntelligence(K9Module):
             result["regime"] = regime
             result["findings"].append(regime_finding)
 
+            volatility = self.volatility_classifier.classify(
+                snapshots
+            )
+
+            if not isinstance(
+                volatility,
+                CryptoVolatilityObservation,
+            ):
+                raise TypeError(
+                    "Crypto volatility classifier must return a "
+                    "CryptoVolatilityObservation."
+                )
+
+            volatility_finding = self._volatility_to_finding(
+                volatility,
+                target=target,
+            )
+
+            result["volatility"] = volatility
+            result["findings"].append(volatility_finding)
+
         return result
 
     @staticmethod
@@ -125,6 +154,32 @@ class CryptoMarketIntelligence(K9Module):
                 "price_change_ratio": regime.price_change_ratio,
                 "volume_ratio": regime.volume_ratio,
                 "observation_count": regime.observation_count,
+            },
+        )
+
+    @staticmethod
+    def _volatility_to_finding(
+        volatility: CryptoVolatilityObservation,
+        target: str,
+    ) -> Finding:
+        return Finding(
+            title=(
+                f"Crypto volatility: "
+                f"{volatility.symbol} / {volatility.regime.value}"
+            ),
+            severity="info",
+            description=(
+                f"Classified {volatility.symbol} price volatility as "
+                f"{volatility.regime.value}."
+            ),
+            source="crypto_volatility",
+            target=target,
+            evidence={
+                "symbol": volatility.symbol,
+                "regime": volatility.regime.value,
+                "realised_volatility": volatility.realised_volatility,
+                "return_count": volatility.return_count,
+                "observation_count": volatility.observation_count,
             },
         )
 

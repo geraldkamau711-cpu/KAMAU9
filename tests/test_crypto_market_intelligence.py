@@ -16,6 +16,11 @@ from modules.crypto.regime import (
     CryptoMarketRegimeClassifier,
     CryptoMarketRegimeObservation,
 )
+from modules.crypto.volatility import (
+    CryptoVolatilityClassifier,
+    CryptoVolatilityObservation,
+    CryptoVolatilityRegime,
+)
 
 
 class FakeMarketDataProvider(CryptoMarketDataProvider):
@@ -351,7 +356,7 @@ def test_crypto_module_returns_regime_finding():
         }
     )
 
-    assert len(result["findings"]) == 2
+    assert len(result["findings"]) == 3
 
     finding = result["findings"][1]
 
@@ -388,6 +393,7 @@ def test_crypto_module_uses_target_for_regime_finding():
     )
 
     assert result["findings"][1].target == "custom-regime-target"
+    assert result["findings"][2].target == "custom-regime-target"
 
 
 def test_crypto_module_accepts_insufficient_regime_data():
@@ -407,10 +413,238 @@ def test_crypto_module_accepts_insufficient_regime_data():
     assert result["regime"].regime is (
         CryptoMarketRegime.INSUFFICIENT_DATA
     )
-    assert len(result["findings"]) == 2
+    assert len(result["findings"]) == 3
     assert result["findings"][1].evidence["regime"] == (
         "insufficient_data"
     )
+
+
+
+def test_crypto_module_uses_default_volatility_classifier():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    assert isinstance(
+        module.volatility_classifier,
+        CryptoVolatilityClassifier,
+    )
+
+
+def test_crypto_module_accepts_custom_volatility_classifier():
+    class RecordingClassifier:
+        def __init__(self):
+            self.received_snapshots = None
+
+        def classify(self, snapshots):
+            self.received_snapshots = snapshots
+
+            return CryptoVolatilityObservation(
+                symbol="BTC/USDT",
+                regime=CryptoVolatilityRegime.NORMAL,
+                realised_volatility=0.01,
+                return_count=len(snapshots) - 1,
+                observation_count=len(snapshots),
+            )
+
+    classifier = RecordingClassifier()
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        volatility_classifier=classifier,
+    )
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=101.0,
+            volume=110.0,
+            minutes=1,
+        ),
+        _snapshot(
+            price=100.5,
+            volume=105.0,
+            minutes=2,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": snapshots,
+        }
+    )
+
+    assert classifier.received_snapshots == snapshots
+    assert result["volatility"].regime is CryptoVolatilityRegime.NORMAL
+
+
+def test_crypto_module_returns_volatility_observation():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=101.0,
+            volume=110.0,
+            minutes=1,
+        ),
+        _snapshot(
+            price=100.5,
+            volume=105.0,
+            minutes=2,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": snapshots,
+        }
+    )
+
+    volatility = result["volatility"]
+
+    assert isinstance(volatility, CryptoVolatilityObservation)
+    assert volatility.symbol == "BTC/USDT"
+    assert volatility.return_count == 2
+    assert volatility.observation_count == 3
+
+
+def test_crypto_module_returns_volatility_finding():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=105.0,
+            volume=300.0,
+            minutes=1,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "target": "crypto-volatility-001",
+            "snapshots": snapshots,
+        }
+    )
+
+    assert len(result["findings"]) == 3
+
+    finding = result["findings"][2]
+
+    assert isinstance(finding, Finding)
+    assert finding.title == "Crypto volatility: BTC/USDT / high"
+    assert finding.severity == "info"
+    assert finding.source == "crypto_volatility"
+    assert finding.target == "crypto-volatility-001"
+    assert finding.evidence["symbol"] == "BTC/USDT"
+    assert finding.evidence["regime"] == "high"
+    assert finding.evidence["return_count"] == 1
+    assert finding.evidence["observation_count"] == 2
+
+
+def test_crypto_module_uses_target_for_volatility_finding():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "target": "custom-volatility-target",
+            "snapshots": [
+                _snapshot(price=100.0, volume=100.0),
+                _snapshot(
+                    price=101.0,
+                    volume=110.0,
+                    minutes=1,
+                ),
+                _snapshot(
+                    price=100.5,
+                    volume=105.0,
+                    minutes=2,
+                ),
+            ],
+        }
+    )
+
+    assert result["findings"][2].target == "custom-volatility-target"
+
+
+def test_crypto_module_accepts_insufficient_volatility_data():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": [
+                _snapshot(),
+            ],
+        }
+    )
+
+    assert result["volatility"].regime is (
+        CryptoVolatilityRegime.INSUFFICIENT_DATA
+    )
+    assert len(result["findings"]) == 3
+    assert result["findings"][2].evidence["regime"] == (
+        "insufficient_data"
+    )
+
+
+def test_crypto_module_skips_volatility_when_snapshots_are_missing():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+        }
+    )
+
+    assert "volatility" not in result
+    assert len(result["findings"]) == 1
+
+
+def test_crypto_module_rejects_invalid_volatility_classifier_result():
+    class InvalidClassifier:
+        def classify(self, snapshots):
+            return {"volatility": "normal"}
+
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        volatility_classifier=InvalidClassifier(),
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="must return a CryptoVolatilityObservation",
+    ):
+        module.run(
+            {
+                "symbol": "BTC/USDT",
+                "mode": K9Mode.CRYPTO,
+                "snapshots": [
+                    _snapshot(price=100.0, volume=100.0),
+                    _snapshot(
+                        price=101.0,
+                        volume=110.0,
+                        minutes=1,
+                    ),
+                ],
+            }
+        )
 
 
 def test_crypto_module_skips_regime_when_snapshots_are_missing():
