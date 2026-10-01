@@ -123,6 +123,7 @@ class K9Core:
             "target": self.context.target,
             "assessment_id": self.context.assessment_id,
             **(context or {}),
+            "mode": self.config.mode,
         }
 
         self.logger.info(
