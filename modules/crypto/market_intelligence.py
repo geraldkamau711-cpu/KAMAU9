@@ -9,6 +9,10 @@ from modules.crypto.market_data import (
     CryptoMarketSnapshot,
 )
 from modules.crypto.observation import CryptoMarketObservation
+from modules.crypto.regime import (
+    CryptoMarketRegimeClassifier,
+    CryptoMarketRegimeObservation,
+)
 
 
 class CryptoMarketIntelligence(K9Module):
@@ -23,9 +27,13 @@ class CryptoMarketIntelligence(K9Module):
         self,
         provider: CryptoMarketDataProvider,
         evidence_adapter: CryptoObservationEvidence | None = None,
+        regime_classifier: CryptoMarketRegimeClassifier | None = None,
     ):
         self.provider = provider
         self.evidence_adapter = evidence_adapter or CryptoObservationEvidence()
+        self.regime_classifier = (
+            regime_classifier or CryptoMarketRegimeClassifier()
+        )
 
     def run(self, context):
         self._validate_context(context)
@@ -59,7 +67,7 @@ class CryptoMarketIntelligence(K9Module):
                 "Crypto evidence adapter must return a Finding."
             )
 
-        return {
+        result = {
             "module": self.name,
             "status": "ok",
             "symbol": observation.symbol,
@@ -69,6 +77,56 @@ class CryptoMarketIntelligence(K9Module):
             "observation": observation,
             "findings": [finding],
         }
+
+        snapshots = context.get("snapshots")
+
+        if snapshots is not None:
+            regime = self.regime_classifier.classify(snapshots)
+
+            if not isinstance(
+                regime,
+                CryptoMarketRegimeObservation,
+            ):
+                raise TypeError(
+                    "Crypto regime classifier must return a "
+                    "CryptoMarketRegimeObservation."
+                )
+
+            regime_finding = self._regime_to_finding(
+                regime,
+                target=target,
+            )
+
+            result["regime"] = regime
+            result["findings"].append(regime_finding)
+
+        return result
+
+    @staticmethod
+    def _regime_to_finding(
+        regime: CryptoMarketRegimeObservation,
+        target: str,
+    ) -> Finding:
+        return Finding(
+            title=(
+                f"Crypto market regime: "
+                f"{regime.symbol} / {regime.regime.value}"
+            ),
+            severity="info",
+            description=(
+                f"Classified {regime.symbol} market activity as "
+                f"{regime.regime.value}."
+            ),
+            source="crypto_market_regime",
+            target=target,
+            evidence={
+                "symbol": regime.symbol,
+                "regime": regime.regime.value,
+                "price_change_ratio": regime.price_change_ratio,
+                "volume_ratio": regime.volume_ratio,
+                "observation_count": regime.observation_count,
+            },
+        )
 
     def _validate_context(self, context):
         if not isinstance(context, dict):

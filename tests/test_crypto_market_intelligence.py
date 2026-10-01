@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -11,6 +11,11 @@ from modules.crypto.market_data import (
 )
 from modules.crypto.market_intelligence import CryptoMarketIntelligence
 from modules.crypto.observation import CryptoMarketObservation
+from modules.crypto.regime import (
+    CryptoMarketRegime,
+    CryptoMarketRegimeClassifier,
+    CryptoMarketRegimeObservation,
+)
 
 
 class FakeMarketDataProvider(CryptoMarketDataProvider):
@@ -23,7 +28,11 @@ class FakeMarketDataProvider(CryptoMarketDataProvider):
         return self.snapshot
 
 
-def _snapshot():
+def _snapshot(
+    price=120000.50,
+    volume=42.75,
+    minutes=0,
+):
     return CryptoMarketSnapshot(
         symbol="BTC/USDT",
         timestamp=datetime(
@@ -33,9 +42,10 @@ def _snapshot():
             9,
             30,
             tzinfo=timezone.utc,
-        ),
-        price=120000.50,
-        volume=42.75,
+        )
+        + timedelta(minutes=minutes),
+        price=price,
+        volume=volume,
     )
 
 
@@ -232,6 +242,219 @@ def test_crypto_module_rejects_invalid_evidence_adapter_result():
             {
                 "symbol": "BTC/USDT",
                 "mode": K9Mode.CRYPTO,
+            }
+        )
+
+
+def test_crypto_module_uses_default_regime_classifier():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    assert isinstance(
+        module.regime_classifier,
+        CryptoMarketRegimeClassifier,
+    )
+
+
+def test_crypto_module_accepts_custom_regime_classifier():
+    class RecordingClassifier:
+        def __init__(self):
+            self.received_snapshots = None
+
+        def classify(self, snapshots):
+            self.received_snapshots = snapshots
+
+            return CryptoMarketRegimeObservation(
+                symbol="BTC/USDT",
+                regime=CryptoMarketRegime.NORMAL,
+                price_change_ratio=0.01,
+                volume_ratio=1.1,
+                observation_count=len(snapshots),
+            )
+
+    classifier = RecordingClassifier()
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        regime_classifier=classifier,
+    )
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=101.0,
+            volume=110.0,
+            minutes=1,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": snapshots,
+        }
+    )
+
+    assert classifier.received_snapshots == snapshots
+    assert result["regime"].regime is CryptoMarketRegime.NORMAL
+
+
+def test_crypto_module_returns_regime_observation():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=101.0,
+            volume=110.0,
+            minutes=1,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": snapshots,
+        }
+    )
+
+    regime = result["regime"]
+
+    assert isinstance(regime, CryptoMarketRegimeObservation)
+    assert regime.symbol == "BTC/USDT"
+    assert regime.regime is CryptoMarketRegime.NORMAL
+    assert regime.observation_count == 2
+
+
+def test_crypto_module_returns_regime_finding():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=105.0,
+            volume=300.0,
+            minutes=1,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "target": "crypto-regime-001",
+            "snapshots": snapshots,
+        }
+    )
+
+    assert len(result["findings"]) == 2
+
+    finding = result["findings"][1]
+
+    assert isinstance(finding, Finding)
+    assert finding.title == (
+        "Crypto market regime: BTC/USDT / price_expansion"
+    )
+    assert finding.severity == "info"
+    assert finding.source == "crypto_market_regime"
+    assert finding.target == "crypto-regime-001"
+    assert finding.evidence["symbol"] == "BTC/USDT"
+    assert finding.evidence["regime"] == "price_expansion"
+    assert finding.evidence["observation_count"] == 2
+
+
+def test_crypto_module_uses_target_for_regime_finding():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "target": "custom-regime-target",
+            "snapshots": [
+                _snapshot(price=100.0, volume=100.0),
+                _snapshot(
+                    price=101.0,
+                    volume=110.0,
+                    minutes=1,
+                ),
+            ],
+        }
+    )
+
+    assert result["findings"][1].target == "custom-regime-target"
+
+
+def test_crypto_module_accepts_insufficient_regime_data():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": [
+                _snapshot(),
+            ],
+        }
+    )
+
+    assert result["regime"].regime is (
+        CryptoMarketRegime.INSUFFICIENT_DATA
+    )
+    assert len(result["findings"]) == 2
+    assert result["findings"][1].evidence["regime"] == (
+        "insufficient_data"
+    )
+
+
+def test_crypto_module_skips_regime_when_snapshots_are_missing():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+        }
+    )
+
+    assert "regime" not in result
+    assert len(result["findings"]) == 1
+
+
+def test_crypto_module_rejects_invalid_regime_classifier_result():
+    class InvalidClassifier:
+        def classify(self, snapshots):
+            return {"regime": "normal"}
+
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        regime_classifier=InvalidClassifier(),
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="must return a CryptoMarketRegimeObservation",
+    ):
+        module.run(
+            {
+                "symbol": "BTC/USDT",
+                "mode": K9Mode.CRYPTO,
+                "snapshots": [
+                    _snapshot(price=100.0, volume=100.0),
+                    _snapshot(
+                        price=101.0,
+                        volume=110.0,
+                        minutes=1,
+                    ),
+                ],
             }
         )
 
