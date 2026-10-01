@@ -338,3 +338,65 @@ def test_k9_core_latest_snapshot_requires_persistence():
         assert str(exc) == "Assessment persistence is not configured."
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_can_list_persisted_assessment_snapshots_for_target(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    for assessment_id, target in (
+        ("assessment-003", "192.168.1.20"),
+        ("assessment-001", "localhost"),
+        ("assessment-002", "192.168.1.20"),
+    ):
+        snapshot = AssessmentSnapshot(
+            assessment_id=assessment_id,
+            target=target,
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        )
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    snapshots = k9.list_assessment_snapshots_for_target(
+        "192.168.1.20"
+    )
+
+    assert [snapshot.assessment_id for snapshot in snapshots] == [
+        "assessment-002",
+        "assessment-003",
+    ]
+
+
+def test_k9_core_returns_empty_history_for_unknown_target(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+    snapshot = AssessmentSnapshot(
+        assessment_id="assessment-001",
+        target="localhost",
+        started_at="2026-09-29T12:00:00+00:00",
+        finding_count=1,
+        severity_counts={"info": 1},
+        sources=["host_intelligence"],
+    )
+    persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    assert k9.list_assessment_snapshots_for_target(
+        "192.168.1.20"
+    ) == []
+
+
+def test_k9_core_target_snapshot_history_requires_persistence():
+    k9 = K9Core()
+
+    try:
+        k9.list_assessment_snapshots_for_target("localhost")
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")

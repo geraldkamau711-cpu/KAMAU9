@@ -205,6 +205,22 @@ class K9Core:
             key=lambda snapshot: snapshot.started_at,
         )
 
+    def list_assessment_snapshots_for_target(
+        self,
+        target: str,
+    ) -> list[AssessmentSnapshot]:
+        """Load persisted assessment snapshots matching a target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        return [
+            snapshot
+            for snapshot in self.list_assessment_snapshots()
+            if snapshot.target == target
+        ]
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 
