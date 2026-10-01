@@ -46,8 +46,25 @@ class K9Core:
         if self.context is None:
             raise RuntimeError("No active assessment.")
 
-        host_result = self.run_module("host_intelligence")
-        interface_result = self.run_module("network_interfaces")
+        self.run_module("host_intelligence")
+        self.run_module("network_interfaces")
+
+        host_result = self.context.get_module_result(
+            "host_intelligence"
+        )
+        interface_result = self.context.get_module_result(
+            "network_interfaces"
+        )
+
+        if host_result is None:
+            raise RuntimeError(
+                "Host intelligence produced no result."
+            )
+
+        if interface_result is None:
+            raise RuntimeError(
+                "Network interface intelligence produced no result."
+            )
 
         host_findings = host_result.get("findings", [])
         interface_findings = interface_result.get("findings", [])
