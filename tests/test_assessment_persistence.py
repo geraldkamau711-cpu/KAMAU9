@@ -293,3 +293,48 @@ def test_k9_core_snapshot_history_requires_persistence():
         assert str(exc) == "Assessment persistence is not configured."
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_can_load_latest_persisted_assessment_snapshot(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    for assessment_id, started_at in (
+        ("assessment-001", "2026-09-29T12:00:00+00:00"),
+        ("assessment-003", "2026-09-29T14:00:00+00:00"),
+        ("assessment-002", "2026-09-29T13:00:00+00:00"),
+    ):
+        snapshot = AssessmentSnapshot(
+            assessment_id=assessment_id,
+            target="localhost",
+            started_at=started_at,
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        )
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    latest = k9.get_latest_assessment_snapshot()
+
+    assert latest is not None
+    assert latest.assessment_id == "assessment-003"
+    assert latest.started_at == "2026-09-29T14:00:00+00:00"
+
+
+def test_k9_core_returns_none_when_no_assessment_snapshots_exist(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+    k9 = K9Core(persistence=persistence)
+
+    assert k9.get_latest_assessment_snapshot() is None
+
+
+def test_k9_core_latest_snapshot_requires_persistence():
+    k9 = K9Core()
+
+    try:
+        k9.get_latest_assessment_snapshot()
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")

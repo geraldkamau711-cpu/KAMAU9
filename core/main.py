@@ -186,6 +186,25 @@ class K9Core:
             for assessment_id in self.persistence.list_assessments()
         ]
 
+    def get_latest_assessment_snapshot(
+        self,
+    ) -> AssessmentSnapshot | None:
+        """Load the most recently started persisted assessment snapshot."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        snapshots = self.list_assessment_snapshots()
+
+        if not snapshots:
+            return None
+
+        return max(
+            snapshots,
+            key=lambda snapshot: snapshot.started_at,
+        )
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 
