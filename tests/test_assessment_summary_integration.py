@@ -102,3 +102,37 @@ def test_k9_summary_tracks_module_statuses():
         "host_intelligence": "success",
         "network_interfaces": "success",
     }
+
+
+class FailingSummaryModule:
+    name = "failing_summary_module"
+
+    def run(self, context):
+        raise RuntimeError("summary module failure")
+
+
+def test_k9_failed_module_appears_in_assessment_summary():
+    k9 = K9Core()
+
+    k9.register_module(FailingSummaryModule())
+    k9.start_assessment("localhost")
+
+    try:
+        k9.run_module("failing_summary_module")
+    except RuntimeError as exc:
+        assert str(exc) == "summary module failure"
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+    summary = k9.build_assessment_summary()
+
+    assert summary["modules"] == [
+        "failing_summary_module",
+    ]
+    assert summary["modules_with_findings"] == []
+    assert summary["modules_without_findings"] == [
+        "failing_summary_module",
+    ]
+    assert summary["module_statuses"] == {
+        "failing_summary_module": "failed",
+    }
