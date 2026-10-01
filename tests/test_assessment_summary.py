@@ -262,3 +262,36 @@ def test_summary_includes_failed_modules_in_executed_modules():
     assert result["modules_without_findings"] == [
         "failing_module",
     ]
+
+
+def test_empty_summary_has_zero_module_execution_counts():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build([])
+
+    assert result["modules_total"] == 0
+    assert result["modules_succeeded"] == 0
+    assert result["modules_failed"] == 0
+
+
+def test_summary_counts_module_execution_statuses():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [],
+        module_statuses={
+            "host_intelligence": "success",
+            "network_interfaces": "success",
+            "failing_module": "failed",
+        },
+    )
+
+    assert result["modules_total"] == 3
+    assert result["modules_succeeded"] == 2
+    assert result["modules_failed"] == 1

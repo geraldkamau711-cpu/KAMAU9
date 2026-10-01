@@ -33,6 +33,15 @@ class AssessmentSummary:
             set(modules) | set(statuses)
         )
 
+        modules_succeeded = sum(
+            status == "success"
+            for status in statuses.values()
+        )
+        modules_failed = sum(
+            status == "failed"
+            for status in statuses.values()
+        )
+
         return {
             "target": self.target,
             "assessment_id": self.assessment_id,
@@ -40,6 +49,9 @@ class AssessmentSummary:
             "severity_counts": severity_counts,
             "sources": sorted(sources),
             "modules": executed_modules,
+            "modules_total": len(executed_modules),
+            "modules_succeeded": modules_succeeded,
+            "modules_failed": modules_failed,
             "modules_with_findings": sorted(modules_with_findings),
             "modules_without_findings": sorted(
                 set(executed_modules) - modules_with_findings
