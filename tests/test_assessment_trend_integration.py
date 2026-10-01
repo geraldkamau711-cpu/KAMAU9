@@ -197,3 +197,43 @@ def test_k9_core_rejects_all_target_trend_summary_without_persistence():
         )
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_analyse_assessment_trend_for_target(tmp_path):
+    core = K9Core()
+    core.persistence = core.persistence or __import__(
+        "core.assessment_persistence",
+        fromlist=["AssessmentPersistence"],
+    ).AssessmentPersistence(tmp_path)
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="localhost",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host"],
+        )
+    )
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="localhost",
+            started_at="2026-09-29T15:00:00+00:00",
+            finding_count=5,
+            severity_counts={"info": 5},
+            sources=["host"],
+        )
+    )
+
+    result = core.analyse_assessment_trend_for_target(
+        "localhost",
+    )
+
+    assert result == {
+        "state": "increased",
+        "finding_count_change": 3,
+        "latest_direction": "increased",
+    }

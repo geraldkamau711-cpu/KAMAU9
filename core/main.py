@@ -1,4 +1,5 @@
 from core.assessment_comparison import AssessmentComparison
+from core.assessment_intelligence import AssessmentIntelligence
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_snapshot import AssessmentSnapshot
 from core.assessment_summary import AssessmentSummary
@@ -339,6 +340,15 @@ class K9Core:
         )
 
         return AssessmentTrend().summarise(comparisons)
+
+    def analyse_assessment_trend_for_target(
+        self,
+        target: str,
+    ) -> dict:
+        """Analyse the descriptive state of a target's assessment trend."""
+        trend = self.summarise_assessment_trend_for_target(target)
+
+        return AssessmentIntelligence().analyse(trend)
 
     def summarise_assessment_trends_for_all_targets(
         self,
