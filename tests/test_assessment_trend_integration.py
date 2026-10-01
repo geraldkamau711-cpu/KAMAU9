@@ -184,3 +184,16 @@ def test_k9_core_summarises_assessment_trends_for_all_targets(tmp_path):
             },
         },
     }
+
+
+def test_k9_core_rejects_all_target_trend_summary_without_persistence():
+    core = K9Core()
+
+    try:
+        core.summarise_assessment_trends_for_all_targets()
+    except RuntimeError as exc:
+        assert str(exc) == (
+            "Assessment persistence is not configured."
+        )
+    else:
+        raise AssertionError("Expected RuntimeError")
