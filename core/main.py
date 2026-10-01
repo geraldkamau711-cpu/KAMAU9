@@ -150,14 +150,24 @@ class K9Core:
             name,
         )
 
-        result = module.run(execution_context)
+        try:
+            result = module.run(execution_context)
 
-        if not isinstance(result, dict):
-            raise TypeError(
-                "K9 modules must return a dictionary result."
+            if not isinstance(result, dict):
+                raise TypeError(
+                    "K9 modules must return a dictionary result."
+                )
+
+            self.context.store_module_result(name, result)
+            self.context.store_module_status(name, "success")
+
+        except Exception:
+            self.context.store_module_status(name, "failed")
+            self.logger.exception(
+                "Module failed: %s",
+                name,
             )
-
-        self.context.store_module_result(name, result)
+            raise
 
         for finding in result.get("findings", []):
             self.evidence.add(finding)

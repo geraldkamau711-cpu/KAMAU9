@@ -137,3 +137,44 @@ def test_list_module_results_returns_copy_of_names():
     names.append("another")
 
     assert context.list_module_results() == ["example"]
+
+
+def test_context_stores_module_status():
+    context = AssessmentContext(target="lab-target")
+
+    context.store_module_status("host_intelligence", "success")
+
+    assert context.get_module_status("host_intelligence") == "success"
+
+
+def test_context_stores_failed_module_status():
+    context = AssessmentContext(target="lab-target")
+
+    context.store_module_status("host_intelligence", "failed")
+
+    assert context.get_module_status("host_intelligence") == "failed"
+
+
+def test_context_lists_module_statuses_as_copy():
+    context = AssessmentContext(target="lab-target")
+
+    context.store_module_status("host_intelligence", "success")
+
+    statuses = context.list_module_statuses()
+    statuses["other_module"] = "failed"
+
+    assert context.list_module_statuses() == {
+        "host_intelligence": "success",
+    }
+
+
+def test_context_rejects_invalid_module_status():
+    context = AssessmentContext(target="lab-target")
+
+    try:
+        context.store_module_status("host_intelligence", "unknown")
+    except ValueError as exc:
+        assert "success" in str(exc)
+        assert "failed" in str(exc)
+    else:
+        raise AssertionError("Expected ValueError")

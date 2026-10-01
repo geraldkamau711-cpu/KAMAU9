@@ -148,3 +148,55 @@ def test_run_module_module_result_view_reflects_previous_results():
         "findings": [],
     }
     assert view.has("second_module") is True
+
+
+class FailingModule(K9Module):
+    name = "failing_module"
+
+    def run(self, context):
+        raise RuntimeError("module failure")
+
+
+def test_run_module_records_success_status():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = ContextCaptureModule()
+
+    core.register_module(module)
+    core.start_assessment("test-target")
+    core.run_module(module.name)
+
+    assert core.context.get_module_status(module.name) == "success"
+
+
+def test_run_module_records_failed_status():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = FailingModule()
+
+    core.register_module(module)
+    core.start_assessment("test-target")
+
+    try:
+        core.run_module(module.name)
+    except RuntimeError as exc:
+        assert str(exc) == "module failure"
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+    assert core.context.get_module_status(module.name) == "failed"
+
+
+def test_failed_module_does_not_store_module_result():
+    core = K9Core(K9Config(mode=K9Mode.LAB))
+    module = FailingModule()
+
+    core.register_module(module)
+    core.start_assessment("test-target")
+
+    try:
+        core.run_module(module.name)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+    assert core.context.get_module_result(module.name) is None
