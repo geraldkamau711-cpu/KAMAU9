@@ -130,6 +130,9 @@ class K9Core:
             finding_count=summary["finding_count"],
             severity_counts=summary["severity_counts"],
             sources=summary["sources"],
+            modules_total=summary["modules_total"],
+            modules_succeeded=summary["modules_succeeded"],
+            modules_failed=summary["modules_failed"],
         )
 
     def run_module(self, name: str, context: dict | None = None):
