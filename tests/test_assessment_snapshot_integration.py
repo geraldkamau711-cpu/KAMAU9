@@ -98,3 +98,52 @@ def test_k9_snapshot_contains_failed_module_execution_count():
     assert snapshot.modules_total == 1
     assert snapshot.modules_succeeded == 0
     assert snapshot.modules_failed == 1
+
+
+def test_k9_comparison_uses_real_assessment_snapshots():
+    from core.assessment_comparison import AssessmentComparison
+    from core.module import K9Module
+
+    class FailingComparisonModule(K9Module):
+        name = "failing_comparison_module"
+
+        def run(self, context):
+            raise RuntimeError("comparison module failure")
+
+    k9 = K9Core()
+
+    k9.register_module(HostIntelligenceModule())
+    k9.register_module(NetworkInterfaceModule())
+    k9.register_module(FailingComparisonModule())
+
+    k9.start_assessment("localhost")
+    k9.build_host_profile()
+    previous = k9.create_assessment_snapshot()
+
+    k9.start_assessment("localhost")
+    k9.build_host_profile()
+
+    try:
+        k9.run_module("failing_comparison_module")
+    except RuntimeError as exc:
+        assert str(exc) == "comparison module failure"
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+    current = k9.create_assessment_snapshot()
+
+    result = AssessmentComparison().compare(previous, current)
+
+    assert result["previous_assessment_id"] != result["current_assessment_id"]
+    assert result["module_execution_counts"] == {
+        "previous": {
+            "total": 2,
+            "succeeded": 2,
+            "failed": 0,
+        },
+        "current": {
+            "total": 3,
+            "succeeded": 2,
+            "failed": 1,
+        },
+    }
