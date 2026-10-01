@@ -356,7 +356,7 @@ def test_crypto_module_returns_regime_finding():
         }
     )
 
-    assert len(result["findings"]) == 3
+    assert len(result["findings"]) == 4
 
     finding = result["findings"][1]
 
@@ -413,7 +413,7 @@ def test_crypto_module_accepts_insufficient_regime_data():
     assert result["regime"].regime is (
         CryptoMarketRegime.INSUFFICIENT_DATA
     )
-    assert len(result["findings"]) == 3
+    assert len(result["findings"]) == 4
     assert result["findings"][1].evidence["regime"] == (
         "insufficient_data"
     )
@@ -535,7 +535,7 @@ def test_crypto_module_returns_volatility_finding():
         }
     )
 
-    assert len(result["findings"]) == 3
+    assert len(result["findings"]) == 4
 
     finding = result["findings"][2]
 
@@ -595,7 +595,7 @@ def test_crypto_module_accepts_insufficient_volatility_data():
     assert result["volatility"].regime is (
         CryptoVolatilityRegime.INSUFFICIENT_DATA
     )
-    assert len(result["findings"]) == 3
+    assert len(result["findings"]) == 4
     assert result["findings"][2].evidence["regime"] == (
         "insufficient_data"
     )
@@ -771,3 +771,189 @@ def test_crypto_module_rejects_invalid_provider_result():
                 "mode": K9Mode.CRYPTO,
             }
         )
+
+
+def test_crypto_module_uses_default_intelligence_synthesizer():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    from modules.crypto.synthesis import CryptoIntelligenceSynthesizer
+
+    assert isinstance(
+        module.intelligence_synthesizer,
+        CryptoIntelligenceSynthesizer,
+    )
+
+
+def test_crypto_module_returns_intelligence_observation():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    from modules.crypto.synthesis import (
+        CryptoIntelligenceObservation,
+        CryptoIntelligenceState,
+    )
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=105.0,
+            volume=300.0,
+            minutes=1,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": snapshots,
+        }
+    )
+
+    intelligence = result["intelligence"]
+
+    assert isinstance(intelligence, CryptoIntelligenceObservation)
+    assert intelligence.symbol == "BTC/USDT"
+    assert intelligence.state is (
+        CryptoIntelligenceState.PRICE_EXPANSION_HIGH_VOLATILITY
+    )
+
+
+def test_crypto_module_returns_intelligence_finding():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=105.0,
+            volume=300.0,
+            minutes=1,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "target": "crypto-intelligence-001",
+            "snapshots": snapshots,
+        }
+    )
+
+    assert len(result["findings"]) == 4
+
+    finding = result["findings"][3]
+
+    assert isinstance(finding, Finding)
+    assert finding.title == (
+        "Crypto intelligence: "
+        "BTC/USDT / price_expansion_high_volatility"
+    )
+    assert finding.severity == "info"
+    assert finding.source == "crypto_intelligence_synthesis"
+    assert finding.target == "crypto-intelligence-001"
+    assert finding.evidence["symbol"] == "BTC/USDT"
+    assert finding.evidence["state"] == (
+        "price_expansion_high_volatility"
+    )
+    assert finding.evidence["market_regime"] == "price_expansion"
+    assert finding.evidence["volatility_regime"] == "high"
+
+
+def test_crypto_module_uses_custom_intelligence_synthesizer():
+    from modules.crypto.synthesis import (
+        CryptoIntelligenceObservation,
+        CryptoIntelligenceState,
+    )
+
+    class RecordingSynthesizer:
+        def __init__(self):
+            self.received_regime = None
+            self.received_volatility = None
+
+        def synthesize(self, market_regime, volatility):
+            self.received_regime = market_regime
+            self.received_volatility = volatility
+
+            return CryptoIntelligenceObservation(
+                symbol="BTC/USDT",
+                state=CryptoIntelligenceState.OTHER,
+                market_regime=market_regime.regime,
+                volatility_regime=volatility.regime,
+            )
+
+    synthesizer = RecordingSynthesizer()
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        intelligence_synthesizer=synthesizer,
+    )
+
+    snapshots = [
+        _snapshot(price=100.0, volume=100.0),
+        _snapshot(
+            price=101.0,
+            volume=110.0,
+            minutes=1,
+        ),
+    ]
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+            "snapshots": snapshots,
+        }
+    )
+
+    assert synthesizer.received_regime is result["regime"]
+    assert synthesizer.received_volatility is result["volatility"]
+    assert result["intelligence"].state is CryptoIntelligenceState.OTHER
+
+
+def test_crypto_module_rejects_invalid_intelligence_synthesizer_result():
+    class InvalidSynthesizer:
+        def synthesize(self, market_regime, volatility):
+            return {"state": "other"}
+
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(
+        provider,
+        intelligence_synthesizer=InvalidSynthesizer(),
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="must return a CryptoIntelligenceObservation",
+    ):
+        module.run(
+            {
+                "symbol": "BTC/USDT",
+                "mode": K9Mode.CRYPTO,
+                "snapshots": [
+                    _snapshot(price=100.0, volume=100.0),
+                    _snapshot(
+                        price=101.0,
+                        volume=110.0,
+                        minutes=1,
+                    ),
+                ],
+            }
+        )
+
+
+def test_crypto_module_skips_intelligence_when_snapshots_are_missing():
+    provider = FakeMarketDataProvider(_snapshot())
+    module = CryptoMarketIntelligence(provider)
+
+    result = module.run(
+        {
+            "symbol": "BTC/USDT",
+            "mode": K9Mode.CRYPTO,
+        }
+    )
+
+    assert "intelligence" not in result
+    assert len(result["findings"]) == 1

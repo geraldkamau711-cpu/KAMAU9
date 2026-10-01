@@ -13,6 +13,10 @@ from modules.crypto.regime import (
     CryptoMarketRegimeClassifier,
     CryptoMarketRegimeObservation,
 )
+from modules.crypto.synthesis import (
+    CryptoIntelligenceObservation,
+    CryptoIntelligenceSynthesizer,
+)
 from modules.crypto.volatility import (
     CryptoVolatilityClassifier,
     CryptoVolatilityObservation,
@@ -33,6 +37,7 @@ class CryptoMarketIntelligence(K9Module):
         evidence_adapter: CryptoObservationEvidence | None = None,
         regime_classifier: CryptoMarketRegimeClassifier | None = None,
         volatility_classifier: CryptoVolatilityClassifier | None = None,
+        intelligence_synthesizer: CryptoIntelligenceSynthesizer | None = None,
     ):
         self.provider = provider
         self.evidence_adapter = evidence_adapter or CryptoObservationEvidence()
@@ -41,6 +46,10 @@ class CryptoMarketIntelligence(K9Module):
         )
         self.volatility_classifier = (
             volatility_classifier or CryptoVolatilityClassifier()
+        )
+        self.intelligence_synthesizer = (
+            intelligence_synthesizer
+            or CryptoIntelligenceSynthesizer()
         )
 
     def run(self, context):
@@ -129,6 +138,28 @@ class CryptoMarketIntelligence(K9Module):
             result["volatility"] = volatility
             result["findings"].append(volatility_finding)
 
+            intelligence = self.intelligence_synthesizer.synthesize(
+                regime,
+                volatility,
+            )
+
+            if not isinstance(
+                intelligence,
+                CryptoIntelligenceObservation,
+            ):
+                raise TypeError(
+                    "Crypto intelligence synthesizer must return a "
+                    "CryptoIntelligenceObservation."
+                )
+
+            intelligence_finding = self._intelligence_to_finding(
+                intelligence,
+                target=target,
+            )
+
+            result["intelligence"] = intelligence
+            result["findings"].append(intelligence_finding)
+
         return result
 
     @staticmethod
@@ -180,6 +211,34 @@ class CryptoMarketIntelligence(K9Module):
                 "realised_volatility": volatility.realised_volatility,
                 "return_count": volatility.return_count,
                 "observation_count": volatility.observation_count,
+            },
+        )
+
+    @staticmethod
+    def _intelligence_to_finding(
+        intelligence: CryptoIntelligenceObservation,
+        target: str,
+    ) -> Finding:
+        return Finding(
+            title=(
+                f"Crypto intelligence: "
+                f"{intelligence.symbol} / {intelligence.state.value}"
+            ),
+            severity="info",
+            description=(
+                f"Combined {intelligence.symbol} market activity and "
+                f"volatility classifications as "
+                f"{intelligence.state.value}."
+            ),
+            source="crypto_intelligence_synthesis",
+            target=target,
+            evidence={
+                "symbol": intelligence.symbol,
+                "state": intelligence.state.value,
+                "market_regime": intelligence.market_regime.value,
+                "volatility_regime": (
+                    intelligence.volatility_regime.value
+                ),
             },
         )
 

@@ -171,12 +171,20 @@ def test_crypto_core_stores_market_regime_and_volatility_findings():
 
     findings = core.evidence.all()
 
-    assert len(result["findings"]) == 3
-    assert len(findings) == 3
+    assert len(result["findings"]) == 4
+    assert len(findings) == 4
 
     assert findings[0].source == "crypto_market_intelligence"
     assert findings[1].source == "crypto_market_regime"
     assert findings[2].source == "crypto_volatility"
+    assert findings[3].source == "crypto_intelligence_synthesis"
+
+    assert findings[3].evidence["symbol"] == "BTC/USDT"
+    assert findings[3].evidence["market_regime"] == "high_activity"
+    assert findings[3].evidence["volatility_regime"] == "normal"
+    assert findings[3].evidence["state"] == (
+        "high_activity_normal_volatility"
+    )
 
 
 def test_crypto_core_preserves_target_in_regime_finding():
