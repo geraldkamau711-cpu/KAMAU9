@@ -71,3 +71,30 @@ def test_k9_snapshot_serialises_module_execution_counts():
     assert result["modules_total"] == 2
     assert result["modules_succeeded"] == 2
     assert result["modules_failed"] == 0
+
+
+def test_k9_snapshot_contains_failed_module_execution_count():
+    from core.module import K9Module
+
+    class FailingSnapshotModule(K9Module):
+        name = "failing_snapshot_module"
+
+        def run(self, context):
+            raise RuntimeError("snapshot module failure")
+
+    k9 = K9Core()
+    k9.register_module(FailingSnapshotModule())
+    k9.start_assessment("localhost")
+
+    try:
+        k9.run_module("failing_snapshot_module")
+    except RuntimeError as exc:
+        assert str(exc) == "snapshot module failure"
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+    snapshot = k9.create_assessment_snapshot()
+
+    assert snapshot.modules_total == 1
+    assert snapshot.modules_succeeded == 0
+    assert snapshot.modules_failed == 1
