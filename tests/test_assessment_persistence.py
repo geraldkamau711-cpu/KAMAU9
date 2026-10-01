@@ -1,5 +1,6 @@
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_snapshot import AssessmentSnapshot
+from core.main import K9Core
 
 
 def test_snapshot_can_be_saved_and_loaded(tmp_path):
@@ -90,3 +91,16 @@ def test_snapshot_persistence_loads_legacy_snapshot_without_module_counts(
     assert loaded.modules_total == 0
     assert loaded.modules_succeeded == 0
     assert loaded.modules_failed == 0
+
+
+def test_k9_core_can_use_explicit_assessment_persistence(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+    k9 = K9Core(persistence=persistence)
+
+    assert k9.persistence is persistence
+
+
+def test_k9_core_persistence_is_optional():
+    k9 = K9Core()
+
+    assert k9.persistence is None

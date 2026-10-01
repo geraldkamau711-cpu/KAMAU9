@@ -1,3 +1,4 @@
+from core.assessment_persistence import AssessmentPersistence
 from core.assessment_snapshot import AssessmentSnapshot
 from core.assessment_summary import AssessmentSummary
 from core.config import K9Config
@@ -12,8 +13,13 @@ from core.registry import ModuleRegistry
 class K9Core:
     """Central K9 orchestrator."""
 
-    def __init__(self, config: K9Config | None = None):
+    def __init__(
+        self,
+        config: K9Config | None = None,
+        persistence: AssessmentPersistence | None = None,
+    ):
         self.config = config or K9Config()
+        self.persistence = persistence
         self.logger = get_logger("K9")
         self.registry = ModuleRegistry()
         self.loader = ModuleLoader(self.registry, mode=self.config.mode)
