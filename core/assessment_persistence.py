@@ -41,4 +41,7 @@ class AssessmentPersistence:
             finding_count=data["finding_count"],
             severity_counts=data["severity_counts"],
             sources=data["sources"],
+            modules_total=data.get("modules_total", 0),
+            modules_succeeded=data.get("modules_succeeded", 0),
+            modules_failed=data.get("modules_failed", 0),
         )
