@@ -27,8 +27,11 @@ class AssessmentSummary:
             sources.add(finding.source)
             modules_with_findings.add(finding.source)
 
-        executed_modules = sorted(set(modules))
         statuses = dict(module_statuses or {})
+
+        executed_modules = sorted(
+            set(modules) | set(statuses)
+        )
 
         return {
             "target": self.target,

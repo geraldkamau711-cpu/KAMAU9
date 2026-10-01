@@ -242,3 +242,23 @@ def test_summary_sorts_module_statuses():
         "m_module",
         "z_module",
     ]
+
+
+def test_summary_includes_failed_modules_in_executed_modules():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [],
+        module_statuses={
+            "failing_module": "failed",
+        },
+    )
+
+    assert result["modules"] == ["failing_module"]
+    assert result["modules_with_findings"] == []
+    assert result["modules_without_findings"] == [
+        "failing_module",
+    ]
