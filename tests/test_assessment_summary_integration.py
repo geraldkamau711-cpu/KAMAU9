@@ -84,3 +84,21 @@ def test_k9_summary_distinguishes_modules_with_and_without_findings():
     ]
 
     assert summary["modules_without_findings"] == []
+
+
+def test_k9_summary_tracks_module_statuses():
+    k9 = K9Core()
+
+    k9.register_module(HostIntelligenceModule())
+    k9.register_module(NetworkInterfaceModule())
+
+    k9.start_assessment("localhost")
+
+    k9.build_host_profile()
+
+    summary = k9.build_assessment_summary()
+
+    assert summary["module_statuses"] == {
+        "host_intelligence": "success",
+        "network_interfaces": "success",
+    }

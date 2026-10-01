@@ -112,6 +112,7 @@ class K9Core:
         return summary_builder.build(
             self.evidence.all(),
             modules=self.context.list_module_results(),
+            module_statuses=self.context.list_module_statuses(),
         )
 
     def create_assessment_snapshot(self):

@@ -185,3 +185,60 @@ def test_summary_empty_modules_have_no_status():
     assert result["modules"] == []
     assert result["modules_with_findings"] == []
     assert result["modules_without_findings"] == []
+
+
+def test_empty_summary_has_no_module_statuses():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build([])
+
+    assert result["module_statuses"] == {}
+
+
+def test_summary_tracks_module_statuses():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [],
+        modules=[
+            "host_intelligence",
+            "network_interfaces",
+        ],
+        module_statuses={
+            "network_interfaces": "success",
+            "host_intelligence": "failed",
+        },
+    )
+
+    assert result["module_statuses"] == {
+        "host_intelligence": "failed",
+        "network_interfaces": "success",
+    }
+
+
+def test_summary_sorts_module_statuses():
+    summary = AssessmentSummary(
+        target="localhost",
+        assessment_id="assessment-123",
+    )
+
+    result = summary.build(
+        [],
+        module_statuses={
+            "z_module": "success",
+            "a_module": "failed",
+            "m_module": "success",
+        },
+    )
+
+    assert list(result["module_statuses"]) == [
+        "a_module",
+        "m_module",
+        "z_module",
+    ]

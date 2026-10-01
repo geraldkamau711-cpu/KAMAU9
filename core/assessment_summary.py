@@ -1,4 +1,4 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 from core.finding import Finding
 
@@ -14,6 +14,7 @@ class AssessmentSummary:
         self,
         findings: list[Finding],
         modules: Iterable[str] = (),
+        module_statuses: Mapping[str, str] | None = None,
     ) -> dict:
         severity_counts = {}
         sources = set()
@@ -27,6 +28,7 @@ class AssessmentSummary:
             modules_with_findings.add(finding.source)
 
         executed_modules = sorted(set(modules))
+        statuses = dict(module_statuses or {})
 
         return {
             "target": self.target,
@@ -39,4 +41,8 @@ class AssessmentSummary:
             "modules_without_findings": sorted(
                 set(executed_modules) - modules_with_findings
             ),
+            "module_statuses": {
+                name: statuses[name]
+                for name in sorted(statuses)
+            },
         }
