@@ -746,3 +746,102 @@ def test_k9_core_all_target_comparison_requires_persistence():
         assert str(exc) == "Assessment persistence is not configured."
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_can_compare_full_assessment_history_for_target(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    snapshots = (
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="192.168.1.20",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="192.168.1.20",
+            started_at="2026-09-29T13:00:00+00:00",
+            finding_count=4,
+            severity_counts={"info": 3, "low": 1},
+            sources=["host_intelligence", "network_interfaces"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="192.168.1.20",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-004",
+            target="localhost",
+            started_at="2026-09-29T15:00:00+00:00",
+            finding_count=8,
+            severity_counts={"high": 1},
+            sources=["host_intelligence"],
+        ),
+    )
+
+    for snapshot in snapshots:
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    result = k9.compare_assessment_history_for_target(
+        "192.168.1.20",
+    )
+
+    assert len(result) == 2
+
+    assert result[0]["previous_assessment_id"] == "assessment-001"
+    assert result[0]["current_assessment_id"] == "assessment-002"
+    assert result[0]["finding_count_change"] == 2
+
+    assert result[1]["previous_assessment_id"] == "assessment-002"
+    assert result[1]["current_assessment_id"] == "assessment-003"
+    assert result[1]["finding_count_change"] == -3
+
+
+def test_k9_core_returns_empty_history_when_target_has_fewer_than_two_snapshots(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="192.168.1.20",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host_intelligence"],
+        )
+    )
+
+    k9 = K9Core(persistence=persistence)
+
+    assert (
+        k9.compare_assessment_history_for_target(
+            "192.168.1.20",
+        )
+        == []
+    )
+
+
+def test_k9_core_assessment_history_requires_persistence():
+    k9 = K9Core()
+
+    try:
+        k9.compare_assessment_history_for_target(
+            "localhost",
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")

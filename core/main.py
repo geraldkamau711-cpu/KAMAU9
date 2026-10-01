@@ -290,6 +290,38 @@ class K9Core:
             snapshots[-1].assessment_id,
         )
 
+    def compare_assessment_history_for_target(
+        self,
+        target: str,
+    ) -> list[dict]:
+        """Compare every consecutive persisted snapshot for a target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        snapshots = self.list_assessment_snapshots_for_target(target)
+
+        snapshots = sorted(
+            snapshots,
+            key=lambda snapshot: snapshot.started_at,
+        )
+
+        comparisons = []
+
+        for previous, current in zip(
+            snapshots,
+            snapshots[1:],
+        ):
+            comparisons.append(
+                self.compare_assessment_snapshots(
+                    previous.assessment_id,
+                    current.assessment_id,
+                )
+            )
+
+        return comparisons
+
     def compare_latest_assessment_snapshots_for_all_targets(
         self,
     ) -> dict[str, dict]:
