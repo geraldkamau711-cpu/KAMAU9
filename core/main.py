@@ -290,6 +290,38 @@ class K9Core:
             snapshots[-1].assessment_id,
         )
 
+    def compare_latest_assessment_snapshots_for_all_targets(
+        self,
+    ) -> dict[str, dict]:
+        """Compare the two most recent persisted snapshots for each target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        snapshots = self.list_assessment_snapshots()
+
+        targets = sorted(
+            {
+                snapshot.target
+                for snapshot in snapshots
+            }
+        )
+
+        comparisons = {}
+
+        for target in targets:
+            comparison = (
+                self.compare_latest_assessment_snapshots_for_target(
+                    target,
+                )
+            )
+
+            if comparison is not None:
+                comparisons[target] = comparison
+
+        return comparisons
+
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
 
