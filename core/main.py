@@ -195,6 +195,20 @@ class K9Core:
             for assessment_id in self.persistence.list_assessments()
         ]
 
+    def list_assessment_targets(self) -> list[str]:
+        """List persisted assessment targets in deterministic order."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        return sorted(
+            {
+                snapshot.target
+                for snapshot in self.list_assessment_snapshots()
+            }
+        )
+
     def get_latest_assessment_snapshot(
         self,
     ) -> AssessmentSnapshot | None:
@@ -293,11 +307,6 @@ class K9Core:
         if len(snapshots) < 2:
             return None
 
-        snapshots = sorted(
-            snapshots,
-            key=lambda snapshot: snapshot.started_at,
-        )
-
         return self.compare_assessment_snapshots(
             snapshots[-2].assessment_id,
             snapshots[-1].assessment_id,
@@ -314,11 +323,6 @@ class K9Core:
             )
 
         snapshots = self.list_assessment_snapshots_for_target(target)
-
-        snapshots = sorted(
-            snapshots,
-            key=lambda snapshot: snapshot.started_at,
-        )
 
         comparisons = []
 
@@ -359,19 +363,7 @@ class K9Core:
         self,
     ) -> dict[str, dict]:
         """Analyse assessment trends for every persisted target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
-
-        snapshots = self.list_assessment_snapshots()
-
-        targets = sorted(
-            {
-                snapshot.target
-                for snapshot in snapshots
-            }
-        )
+        targets = self.list_assessment_targets()
 
         return {
             target: self.analyse_assessment_trend_for_target(
@@ -384,19 +376,7 @@ class K9Core:
         self,
     ) -> dict[str, dict]:
         """Summarise assessment trends for every persisted target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
-
-        snapshots = self.list_assessment_snapshots()
-
-        targets = sorted(
-            {
-                snapshot.target
-                for snapshot in snapshots
-            }
-        )
+        targets = self.list_assessment_targets()
 
         return {
             target: self.summarise_assessment_trend_for_target(
@@ -409,19 +389,7 @@ class K9Core:
         self,
     ) -> dict[str, dict]:
         """Compare the two most recent persisted snapshots for each target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
-
-        snapshots = self.list_assessment_snapshots()
-
-        targets = sorted(
-            {
-                snapshot.target
-                for snapshot in snapshots
-            }
-        )
+        targets = self.list_assessment_targets()
 
         comparisons = {}
 
