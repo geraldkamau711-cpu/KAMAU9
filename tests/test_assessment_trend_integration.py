@@ -237,3 +237,70 @@ def test_k9_core_analyse_assessment_trend_for_target(tmp_path):
         "finding_count_change": 3,
         "latest_direction": "increased",
     }
+
+
+def test_k9_core_analyse_assessment_trends_for_all_targets(tmp_path):
+    core = K9Core()
+    core.persistence = core.persistence or __import__(
+        "core.assessment_persistence",
+        fromlist=["AssessmentPersistence"],
+    ).AssessmentPersistence(tmp_path)
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-a-001",
+            target="host-a",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host"],
+        )
+    )
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-a-002",
+            target="host-a",
+            started_at="2026-09-29T15:00:00+00:00",
+            finding_count=5,
+            severity_counts={"info": 5},
+            sources=["host"],
+        )
+    )
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-b-001",
+            target="host-b",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=5,
+            severity_counts={"warning": 5},
+            sources=["network"],
+        )
+    )
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-b-002",
+            target="host-b",
+            started_at="2026-09-29T15:00:00+00:00",
+            finding_count=3,
+            severity_counts={"warning": 3},
+            sources=["network"],
+        )
+    )
+
+    result = core.analyse_assessment_trends_for_all_targets()
+
+    assert result == {
+        "host-a": {
+            "state": "increased",
+            "finding_count_change": 3,
+            "latest_direction": "increased",
+        },
+        "host-b": {
+            "state": "decreased",
+            "finding_count_change": -2,
+            "latest_direction": "decreased",
+        },
+    }
