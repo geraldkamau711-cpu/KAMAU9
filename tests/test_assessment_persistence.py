@@ -651,6 +651,64 @@ def test_k9_core_can_compare_latest_two_snapshots_for_target(
     assert result["removed_sources"] == []
 
 
+def test_k9_core_target_history_comparison_uses_chronological_order(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    snapshots = (
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="192.168.1.20",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="192.168.1.20",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=5,
+            severity_counts={"info": 5},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="192.168.1.20",
+            started_at="2026-09-29T13:00:00+00:00",
+            finding_count=3,
+            severity_counts={"info": 3},
+            sources=["host_intelligence"],
+        ),
+    )
+
+    for snapshot in snapshots:
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    result = k9.compare_assessment_history_for_target(
+        "192.168.1.20",
+    )
+
+    assert [
+        (
+            comparison["previous_assessment_id"],
+            comparison["current_assessment_id"],
+        )
+        for comparison in result
+    ] == [
+        ("assessment-003", "assessment-002"),
+        ("assessment-002", "assessment-001"),
+    ]
+
+    assert [comparison["finding_count_change"] for comparison in result] == [
+        2,
+        2,
+    ]
+
+
 def test_k9_core_returns_none_when_target_has_fewer_than_two_snapshots(
     tmp_path,
 ):
