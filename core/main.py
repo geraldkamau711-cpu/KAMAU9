@@ -350,15 +350,9 @@ class K9Core:
                 "Assessment persistence is not configured."
             )
 
-        snapshots = self.list_assessment_snapshots_by_target().get(
+        return self.get_latest_assessment_snapshots_by_target().get(
             target,
-            [],
         )
-
-        if not snapshots:
-            return None
-
-        return snapshots[-1]
 
     def compare_assessment_snapshots(
         self,
