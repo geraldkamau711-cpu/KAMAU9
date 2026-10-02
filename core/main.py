@@ -255,6 +255,23 @@ class K9Core:
             if snapshots
         }
 
+    def get_latest_assessment_snapshot_pairs_by_target(
+        self,
+    ) -> dict[str, tuple[AssessmentSnapshot, AssessmentSnapshot]]:
+        """Load the previous and latest persisted snapshot for each target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        grouped = self.list_assessment_snapshots_by_target()
+
+        return {
+            target: (snapshots[-2], snapshots[-1])
+            for target, snapshots in grouped.items()
+            if len(snapshots) >= 2
+        }
+
     def get_latest_assessment_snapshot(
         self,
     ) -> AssessmentSnapshot | None:
@@ -434,28 +451,17 @@ class K9Core:
                 "Assessment persistence is not configured."
             )
 
-        latest_snapshots = (
-            self.get_latest_assessment_snapshots_by_target()
+        snapshot_pairs = (
+            self.get_latest_assessment_snapshot_pairs_by_target()
         )
 
-        snapshots_by_target = self.list_assessment_snapshots_by_target()
-
-        comparisons = {}
-
-        for target, current in latest_snapshots.items():
-            snapshots = snapshots_by_target[target]
-
-            if len(snapshots) < 2:
-                continue
-
-            previous = snapshots[-2]
-
-            comparisons[target] = self.compare_assessment_snapshots(
+        return {
+            target: self.compare_assessment_snapshots(
                 previous.assessment_id,
                 current.assessment_id,
             )
-
-        return comparisons
+            for target, (previous, current) in snapshot_pairs.items()
+        }
 
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
