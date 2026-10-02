@@ -1523,3 +1523,101 @@ def test_k9_core_latest_snapshot_pair_for_target_requires_persistence():
         raise AssertionError(
             "Expected RuntimeError when persistence is not configured."
         )
+
+
+def test_k9_core_can_list_consecutive_assessment_snapshot_pairs_for_target(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+    core = K9Core(persistence=persistence)
+
+    snapshots = [
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="localhost",
+            started_at="2026-10-02T10:00:00",
+            finding_count=1,
+            severity_counts={"low": 1},
+            sources=["module-a"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="localhost",
+            started_at="2026-10-02T11:00:00",
+            finding_count=2,
+            severity_counts={"low": 2},
+            sources=["module-a"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="localhost",
+            started_at="2026-10-02T12:00:00",
+            finding_count=3,
+            severity_counts={"low": 3},
+            sources=["module-a"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-004",
+            target="localhost",
+            started_at="2026-10-02T13:00:00",
+            finding_count=4,
+            severity_counts={"low": 4},
+            sources=["module-a"],
+        ),
+    ]
+
+    for snapshot in snapshots:
+        persistence.save(snapshot)
+
+    pairs = core.list_assessment_snapshot_pairs_for_target(
+        "localhost",
+    )
+
+    assert [
+        (previous.assessment_id, current.assessment_id)
+        for previous, current in pairs
+    ] == [
+        ("assessment-001", "assessment-002"),
+        ("assessment-002", "assessment-003"),
+        ("assessment-003", "assessment-004"),
+    ]
+
+
+def test_k9_core_returns_empty_snapshot_pair_history_for_target_with_fewer_than_two_snapshots(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+    core = K9Core(persistence=persistence)
+
+    persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="localhost",
+            started_at="2026-10-02T10:00:00",
+            finding_count=1,
+            severity_counts={"low": 1},
+            sources=["module-a"],
+        )
+    )
+
+    assert (
+        core.list_assessment_snapshot_pairs_for_target(
+            "localhost",
+        )
+        == []
+    )
+
+
+def test_k9_core_snapshot_pair_history_requires_persistence():
+    core = K9Core()
+
+    try:
+        core.list_assessment_snapshot_pairs_for_target(
+            "localhost",
+        )
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError(
+            "Expected RuntimeError when persistence is not configured."
+        )

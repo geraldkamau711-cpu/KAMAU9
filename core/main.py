@@ -320,6 +320,29 @@ class K9Core:
             [],
         )
 
+    def list_assessment_snapshot_pairs_for_target(
+        self,
+        target: str,
+    ) -> list[
+        tuple[AssessmentSnapshot, AssessmentSnapshot]
+    ]:
+        """Load consecutive persisted snapshot pairs for a target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        snapshots = self.list_assessment_snapshots_for_target(
+            target,
+        )
+
+        return list(
+            zip(
+                snapshots,
+                snapshots[1:],
+            )
+        )
+
     def get_latest_assessment_snapshot_for_target(
         self,
         target: str,
@@ -399,22 +422,19 @@ class K9Core:
                 "Assessment persistence is not configured."
             )
 
-        snapshots = self.list_assessment_snapshots_for_target(target)
-
-        comparisons = []
-
-        for previous, current in zip(
-            snapshots,
-            snapshots[1:],
-        ):
-            comparisons.append(
-                self.compare_assessment_snapshots(
-                    previous.assessment_id,
-                    current.assessment_id,
-                )
+        snapshot_pairs = (
+            self.list_assessment_snapshot_pairs_for_target(
+                target,
             )
+        )
 
-        return comparisons
+        return [
+            self.compare_assessment_snapshots(
+                previous.assessment_id,
+                current.assessment_id,
+            )
+            for previous, current in snapshot_pairs
+        ]
 
     def summarise_assessment_trend_for_target(
         self,
