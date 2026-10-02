@@ -230,7 +230,7 @@ class K9Core:
         self,
     ) -> dict[str, AssessmentSnapshot]:
         """Load the latest persisted assessment snapshot for each target."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         grouped = self.list_assessment_snapshots_by_target()
 
@@ -244,7 +244,7 @@ class K9Core:
         self,
     ) -> dict[str, tuple[AssessmentSnapshot, AssessmentSnapshot]]:
         """Load the previous and latest persisted snapshot for each target."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         grouped = self.list_assessment_snapshots_by_target()
 
@@ -259,7 +259,7 @@ class K9Core:
         target: str,
     ) -> tuple[AssessmentSnapshot, AssessmentSnapshot] | None:
         """Load the previous and latest persisted snapshot for a target."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         return self.get_latest_assessment_snapshot_pairs_by_target().get(
             target,
@@ -269,7 +269,7 @@ class K9Core:
         self,
     ) -> AssessmentSnapshot | None:
         """Load the most recently started persisted assessment snapshot."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         snapshots = self.list_assessment_snapshots()
 
@@ -286,7 +286,7 @@ class K9Core:
         target: str,
     ) -> list[AssessmentSnapshot]:
         """Load persisted assessment snapshots for a target chronologically."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         return self.list_assessment_snapshots_by_target().get(
             target,
@@ -300,7 +300,7 @@ class K9Core:
         tuple[AssessmentSnapshot, AssessmentSnapshot]
     ]:
         """Load consecutive persisted snapshot pairs for a target."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         snapshots = self.list_assessment_snapshots_for_target(
             target,
@@ -349,7 +349,7 @@ class K9Core:
         target: str,
     ) -> dict | None:
         """Compare the two most recent persisted snapshots for a target."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         snapshot_pair = (
             self.get_latest_assessment_snapshot_pair_for_target(
@@ -372,7 +372,7 @@ class K9Core:
         target: str,
     ) -> list[dict]:
         """Compare every consecutive persisted snapshot for a target."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         snapshot_pairs = (
             self.list_assessment_snapshot_pairs_for_target(
@@ -438,7 +438,7 @@ class K9Core:
         self,
     ) -> dict[str, dict]:
         """Compare the two most recent persisted snapshots for each target."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         snapshot_pairs = (
             self.get_latest_assessment_snapshot_pairs_by_target()
