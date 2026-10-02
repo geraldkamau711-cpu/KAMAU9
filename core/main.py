@@ -1,4 +1,4 @@
-from core.assessment_comparison import AssessmentComparison
+from core.assessment_comparison_service import AssessmentComparisonService
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_query import AssessmentQuery
 from core.assessment_snapshot import AssessmentSnapshot
@@ -43,6 +43,14 @@ class K9Core:
         persistence = self._require_persistence()
 
         return AssessmentQuery(persistence)
+
+    def _require_assessment_comparison_service(
+        self,
+    ) -> AssessmentComparisonService:
+        """Return the assessment comparison service for configured persistence."""
+        query = self._require_assessment_query()
+
+        return AssessmentComparisonService(query)
 
     def _require_assessment_trend_service(
         self,
@@ -293,18 +301,11 @@ class K9Core:
         current_assessment_id: str,
     ) -> dict:
         """Compare two persisted assessment snapshots."""
-        self._require_persistence()
+        service = self._require_assessment_comparison_service()
 
-        previous = self.load_assessment_snapshot(
+        return service.compare_assessment_snapshots(
             previous_assessment_id,
-        )
-        current = self.load_assessment_snapshot(
             current_assessment_id,
-        )
-
-        return AssessmentComparison().compare(
-            previous,
-            current,
         )
 
     def compare_latest_assessment_snapshots_for_target(
@@ -312,22 +313,10 @@ class K9Core:
         target: str,
     ) -> dict | None:
         """Compare the two most recent persisted snapshots for a target."""
-        self._require_persistence()
+        service = self._require_assessment_comparison_service()
 
-        snapshot_pair = (
-            self.get_latest_assessment_snapshot_pair_for_target(
-                target,
-            )
-        )
-
-        if snapshot_pair is None:
-            return None
-
-        previous, current = snapshot_pair
-
-        return self.compare_assessment_snapshots(
-            previous.assessment_id,
-            current.assessment_id,
+        return service.compare_latest_assessment_snapshots_for_target(
+            target,
         )
 
     def compare_assessment_history_for_target(
@@ -335,21 +324,11 @@ class K9Core:
         target: str,
     ) -> list[dict]:
         """Compare every consecutive persisted snapshot for a target."""
-        self._require_persistence()
+        service = self._require_assessment_comparison_service()
 
-        snapshot_pairs = (
-            self.list_assessment_snapshot_pairs_for_target(
-                target,
-            )
+        return service.compare_assessment_history_for_target(
+            target,
         )
-
-        return [
-            self.compare_assessment_snapshots(
-                previous.assessment_id,
-                current.assessment_id,
-            )
-            for previous, current in snapshot_pairs
-        ]
 
     def summarise_assessment_trend_for_target(
         self,
@@ -393,19 +372,9 @@ class K9Core:
         self,
     ) -> dict[str, dict]:
         """Compare the two most recent persisted snapshots for each target."""
-        self._require_persistence()
+        service = self._require_assessment_comparison_service()
 
-        snapshot_pairs = (
-            self.get_latest_assessment_snapshot_pairs_by_target()
-        )
-
-        return {
-            target: self.compare_assessment_snapshots(
-                previous.assessment_id,
-                current.assessment_id,
-            )
-            for target, (previous, current) in snapshot_pairs.items()
-        }
+        return service.compare_latest_assessment_snapshots_for_all_targets()
 
     def run_module(self, name: str, context: dict | None = None):
         module = self.registry.get(name)
