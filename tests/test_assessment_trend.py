@@ -150,3 +150,46 @@ def test_assessment_trend_handles_empty_severity_history():
     result = AssessmentTrend().summarise(comparisons)
 
     assert result["severity_changes"] == {}
+
+
+def test_assessment_trend_summarises_module_execution_changes():
+    comparisons = [
+        {
+            "finding_count_change": 2,
+            "module_execution_counts": {
+                "previous": {
+                    "total": 2,
+                    "succeeded": 2,
+                    "failed": 0,
+                },
+                "current": {
+                    "total": 3,
+                    "succeeded": 2,
+                    "failed": 1,
+                },
+            },
+        },
+        {
+            "finding_count_change": -1,
+            "module_execution_counts": {
+                "previous": {
+                    "total": 3,
+                    "succeeded": 2,
+                    "failed": 1,
+                },
+                "current": {
+                    "total": 3,
+                    "succeeded": 3,
+                    "failed": 0,
+                },
+            },
+        },
+    ]
+
+    result = AssessmentTrend().summarise(comparisons)
+
+    assert result["module_execution_changes"] == {
+        "total": 1,
+        "succeeded": 1,
+        "failed": 0,
+    }
