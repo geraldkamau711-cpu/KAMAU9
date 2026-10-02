@@ -1,6 +1,7 @@
 from core.assessment_comparison import AssessmentComparison
 from core.assessment_intelligence import AssessmentIntelligence
 from core.assessment_persistence import AssessmentPersistence
+from core.assessment_query import AssessmentQuery
 from core.assessment_snapshot import AssessmentSnapshot
 from core.assessment_summary import AssessmentSummary
 from core.assessment_trend import AssessmentTrend
@@ -37,6 +38,12 @@ class K9Core:
             )
 
         return self.persistence
+
+    def _require_assessment_query(self) -> AssessmentQuery:
+        """Return the query layer for the configured persistence."""
+        persistence = self._require_persistence()
+
+        return AssessmentQuery(persistence)
 
     def load_modules(self, path: str = "config/modules.json"):
         self.loader.load_from_file(path)
@@ -185,83 +192,48 @@ class K9Core:
 
     def list_assessment_snapshots(self) -> list[AssessmentSnapshot]:
         """Load all persisted assessment snapshots in deterministic order."""
-        persistence = self._require_persistence()
+        query = self._require_assessment_query()
 
-        return [
-            persistence.load(assessment_id)
-            for assessment_id in persistence.list_assessments()
-        ]
+        return query.list_snapshots()
 
     def list_assessment_targets(self) -> list[str]:
         """List persisted assessment targets in deterministic order."""
-        persistence = self._require_persistence()
+        query = self._require_assessment_query()
 
-        return list(
-            self.list_assessment_snapshots_by_target().keys()
-        )
+        return query.list_targets()
 
     def list_assessment_snapshots_by_target(
         self,
     ) -> dict[str, list[AssessmentSnapshot]]:
         """Group persisted assessment snapshots by target chronologically."""
-        persistence = self._require_persistence()
+        query = self._require_assessment_query()
 
-        grouped: dict[str, list[AssessmentSnapshot]] = {}
-
-        for snapshot in self.list_assessment_snapshots():
-            grouped.setdefault(
-                snapshot.target,
-                [],
-            ).append(snapshot)
-
-        for target in grouped:
-            grouped[target].sort(
-                key=lambda snapshot: snapshot.started_at,
-            )
-
-        return dict(
-            sorted(
-                grouped.items(),
-                key=lambda item: item[0],
-            )
-        )
+        return query.list_snapshots_by_target()
 
     def get_latest_assessment_snapshots_by_target(
         self,
     ) -> dict[str, AssessmentSnapshot]:
         """Load the latest persisted assessment snapshot for each target."""
-        self._require_persistence()
+        query = self._require_assessment_query()
 
-        grouped = self.list_assessment_snapshots_by_target()
-
-        return {
-            target: snapshots[-1]
-            for target, snapshots in grouped.items()
-            if snapshots
-        }
+        return query.get_latest_snapshots_by_target()
 
     def get_latest_assessment_snapshot_pairs_by_target(
         self,
     ) -> dict[str, tuple[AssessmentSnapshot, AssessmentSnapshot]]:
         """Load the previous and latest persisted snapshot for each target."""
-        self._require_persistence()
+        query = self._require_assessment_query()
 
-        grouped = self.list_assessment_snapshots_by_target()
-
-        return {
-            target: (snapshots[-2], snapshots[-1])
-            for target, snapshots in grouped.items()
-            if len(snapshots) >= 2
-        }
+        return query.get_latest_snapshot_pairs_by_target()
 
     def get_latest_assessment_snapshot_pair_for_target(
         self,
         target: str,
     ) -> tuple[AssessmentSnapshot, AssessmentSnapshot] | None:
         """Load the previous and latest persisted snapshot for a target."""
-        self._require_persistence()
+        query = self._require_assessment_query()
 
-        return self.get_latest_assessment_snapshot_pairs_by_target().get(
+        return query.get_latest_snapshot_pair_for_target(
             target,
         )
 
@@ -269,28 +241,19 @@ class K9Core:
         self,
     ) -> AssessmentSnapshot | None:
         """Load the most recently started persisted assessment snapshot."""
-        self._require_persistence()
+        query = self._require_assessment_query()
 
-        snapshots = self.list_assessment_snapshots()
-
-        if not snapshots:
-            return None
-
-        return max(
-            snapshots,
-            key=lambda snapshot: snapshot.started_at,
-        )
+        return query.get_latest_snapshot()
 
     def list_assessment_snapshots_for_target(
         self,
         target: str,
     ) -> list[AssessmentSnapshot]:
         """Load persisted assessment snapshots for a target chronologically."""
-        self._require_persistence()
+        query = self._require_assessment_query()
 
-        return self.list_assessment_snapshots_by_target().get(
+        return query.list_snapshots_for_target(
             target,
-            [],
         )
 
     def list_assessment_snapshot_pairs_for_target(
@@ -300,17 +263,10 @@ class K9Core:
         tuple[AssessmentSnapshot, AssessmentSnapshot]
     ]:
         """Load consecutive persisted snapshot pairs for a target."""
-        self._require_persistence()
+        query = self._require_assessment_query()
 
-        snapshots = self.list_assessment_snapshots_for_target(
+        return query.list_snapshot_pairs_for_target(
             target,
-        )
-
-        return list(
-            zip(
-                snapshots,
-                snapshots[1:],
-            )
         )
 
     def get_latest_assessment_snapshot_for_target(
@@ -318,9 +274,9 @@ class K9Core:
         target: str,
     ) -> AssessmentSnapshot | None:
         """Load the most recently started snapshot for a target."""
-        persistence = self._require_persistence()
+        query = self._require_assessment_query()
 
-        return self.get_latest_assessment_snapshots_by_target().get(
+        return query.get_latest_snapshot_for_target(
             target,
         )
 
@@ -330,7 +286,7 @@ class K9Core:
         current_assessment_id: str,
     ) -> dict:
         """Compare two persisted assessment snapshots."""
-        persistence = self._require_persistence()
+        self._require_persistence()
 
         previous = self.load_assessment_snapshot(
             previous_assessment_id,
@@ -394,7 +350,7 @@ class K9Core:
     ) -> dict:
         """Summarise finding-count trends across a target's assessments."""
         comparisons = self.compare_assessment_history_for_target(
-            target,
+            target
         )
 
         return AssessmentTrend().summarise(comparisons)
