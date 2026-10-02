@@ -186,7 +186,7 @@ def test_assessment_intelligence_reports_module_execution_changes():
             "unchanged": 0,
             "latest_change": 2,
             "latest_direction": "increased",
-            "module_execution_counts": {
+            "module_execution_changes": {
                 "total": 1,
                 "succeeded": 1,
                 "failed": 0,
@@ -198,7 +198,7 @@ def test_assessment_intelligence_reports_module_execution_changes():
         "state": "increased",
         "finding_count_change": 2,
         "latest_direction": "increased",
-        "module_execution_counts": {
+        "module_execution_changes": {
             "total": 1,
             "succeeded": 1,
             "failed": 0,

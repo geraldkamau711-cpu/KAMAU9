@@ -29,9 +29,9 @@ class AssessmentIntelligence:
                 trend["severity_changes"]
             )
 
-        if "module_execution_counts" in trend:
-            result["module_execution_counts"] = dict(
-                trend["module_execution_counts"]
+        if "module_execution_changes" in trend:
+            result["module_execution_changes"] = dict(
+                trend["module_execution_changes"]
             )
 
         return result
