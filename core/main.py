@@ -272,6 +272,20 @@ class K9Core:
             if len(snapshots) >= 2
         }
 
+    def get_latest_assessment_snapshot_pair_for_target(
+        self,
+        target: str,
+    ) -> tuple[AssessmentSnapshot, AssessmentSnapshot] | None:
+        """Load the previous and latest persisted snapshot for a target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        return self.get_latest_assessment_snapshot_pairs_by_target().get(
+            target,
+        )
+
     def get_latest_assessment_snapshot(
         self,
     ) -> AssessmentSnapshot | None:
@@ -359,14 +373,20 @@ class K9Core:
                 "Assessment persistence is not configured."
             )
 
-        snapshots = self.list_assessment_snapshots_for_target(target)
+        snapshot_pair = (
+            self.get_latest_assessment_snapshot_pair_for_target(
+                target,
+            )
+        )
 
-        if len(snapshots) < 2:
+        if snapshot_pair is None:
             return None
 
+        previous, current = snapshot_pair
+
         return self.compare_assessment_snapshots(
-            snapshots[-2].assessment_id,
-            snapshots[-1].assessment_id,
+            previous.assessment_id,
+            current.assessment_id,
         )
 
     def compare_assessment_history_for_target(
