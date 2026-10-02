@@ -236,6 +236,9 @@ def test_k9_core_analyse_assessment_trend_for_target(tmp_path):
         "state": "increased",
         "finding_count_change": 3,
         "latest_direction": "increased",
+        "severity_changes": {
+            "info": 3,
+        },
     }
 
 
@@ -297,10 +300,16 @@ def test_k9_core_analyse_assessment_trends_for_all_targets(tmp_path):
             "state": "increased",
             "finding_count_change": 3,
             "latest_direction": "increased",
+            "severity_changes": {
+                "info": 3,
+            },
         },
         "host-b": {
             "state": "decreased",
             "finding_count_change": -2,
             "latest_direction": "decreased",
+            "severity_changes": {
+                "warning": -2,
+            },
         },
     }

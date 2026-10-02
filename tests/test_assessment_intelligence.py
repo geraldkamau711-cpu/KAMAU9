@@ -100,3 +100,77 @@ def test_assessment_intelligence_rejects_unknown_direction():
         )
     else:
         raise AssertionError("Expected ValueError")
+
+
+def test_assessment_intelligence_reports_severity_changes():
+    result = AssessmentIntelligence().analyse(
+        {
+            "comparison_count": 1,
+            "total_finding_count_change": 2,
+            "increases": 1,
+            "decreases": 0,
+            "unchanged": 0,
+            "latest_change": 2,
+            "latest_direction": "increased",
+            "severity_changes": {
+                "info": 1,
+                "warning": 1,
+            },
+        }
+    )
+
+    assert result == {
+        "state": "increased",
+        "finding_count_change": 2,
+        "latest_direction": "increased",
+        "severity_changes": {
+            "info": 1,
+            "warning": 1,
+        },
+    }
+
+
+def test_assessment_intelligence_reports_negative_severity_changes():
+    result = AssessmentIntelligence().analyse(
+        {
+            "comparison_count": 1,
+            "total_finding_count_change": -2,
+            "increases": 0,
+            "decreases": 1,
+            "unchanged": 0,
+            "latest_change": -2,
+            "latest_direction": "decreased",
+            "severity_changes": {
+                "warning": -2,
+            },
+        }
+    )
+
+    assert result == {
+        "state": "decreased",
+        "finding_count_change": -2,
+        "latest_direction": "decreased",
+        "severity_changes": {
+            "warning": -2,
+        },
+    }
+
+
+def test_assessment_intelligence_preserves_no_severity_history():
+    result = AssessmentIntelligence().analyse(
+        {
+            "comparison_count": 1,
+            "total_finding_count_change": 1,
+            "increases": 1,
+            "decreases": 0,
+            "unchanged": 0,
+            "latest_change": 1,
+            "latest_direction": "increased",
+        }
+    )
+
+    assert result == {
+        "state": "increased",
+        "finding_count_change": 1,
+        "latest_direction": "increased",
+    }

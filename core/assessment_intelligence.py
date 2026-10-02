@@ -18,8 +18,15 @@ class AssessmentIntelligence:
                 f"Unsupported assessment trend direction: {direction!r}"
             )
 
-        return {
+        result = {
             "state": state,
             "finding_count_change": trend["total_finding_count_change"],
             "latest_direction": direction,
         }
+
+        if "severity_changes" in trend:
+            result["severity_changes"] = dict(
+                trend["severity_changes"]
+            )
+
+        return result
