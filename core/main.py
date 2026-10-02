@@ -218,17 +218,22 @@ class K9Core:
         self,
         target: str,
     ) -> list[AssessmentSnapshot]:
-        """Load persisted assessment snapshots matching a target."""
+        """Load persisted assessment snapshots for a target chronologically."""
         if self.persistence is None:
             raise RuntimeError(
                 "Assessment persistence is not configured."
             )
 
-        return [
+        snapshots = [
             snapshot
             for snapshot in self.list_assessment_snapshots()
             if snapshot.target == target
         ]
+
+        return sorted(
+            snapshots,
+            key=lambda snapshot: snapshot.started_at,
+        )
 
     def get_latest_assessment_snapshot_for_target(
         self,

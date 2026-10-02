@@ -372,6 +372,55 @@ def test_k9_core_can_list_persisted_assessment_snapshots_for_target(
     ]
 
 
+
+def test_k9_core_lists_target_snapshots_in_started_at_order(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    snapshots = (
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="192.168.1.20",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="192.168.1.20",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=3,
+            severity_counts={"info": 3},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="192.168.1.20",
+            started_at="2026-09-29T13:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host_intelligence"],
+        ),
+    )
+
+    for snapshot in snapshots:
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    result = k9.list_assessment_snapshots_for_target(
+        "192.168.1.20",
+    )
+
+    assert [snapshot.assessment_id for snapshot in result] == [
+        "assessment-003",
+        "assessment-002",
+        "assessment-001",
+    ]
+
+
 def test_k9_core_returns_empty_history_for_unknown_target(tmp_path):
     persistence = AssessmentPersistence(tmp_path)
     snapshot = AssessmentSnapshot(
