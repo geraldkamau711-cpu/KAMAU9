@@ -238,6 +238,23 @@ class K9Core:
             )
         )
 
+    def get_latest_assessment_snapshots_by_target(
+        self,
+    ) -> dict[str, AssessmentSnapshot]:
+        """Load the latest persisted assessment snapshot for each target."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        grouped = self.list_assessment_snapshots_by_target()
+
+        return {
+            target: snapshots[-1]
+            for target, snapshots in grouped.items()
+            if snapshots
+        }
+
     def get_latest_assessment_snapshot(
         self,
     ) -> AssessmentSnapshot | None:
