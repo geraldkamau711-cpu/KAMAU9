@@ -313,3 +313,17 @@ def test_k9_core_analyse_assessment_trends_for_all_targets(tmp_path):
             },
         },
     }
+
+
+def test_k9_core_exposes_assessment_trend_service(tmp_path):
+    core = K9Core()
+    core.persistence = core.persistence or __import__(
+        "core.assessment_persistence",
+        fromlist=["AssessmentPersistence"],
+    ).AssessmentPersistence(tmp_path)
+
+    service = core._require_assessment_trend_service()
+
+    from core.assessment_trend_service import AssessmentTrendService
+
+    assert isinstance(service, AssessmentTrendService)

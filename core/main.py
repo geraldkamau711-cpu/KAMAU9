@@ -1,10 +1,9 @@
 from core.assessment_comparison import AssessmentComparison
-from core.assessment_intelligence import AssessmentIntelligence
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_query import AssessmentQuery
 from core.assessment_snapshot import AssessmentSnapshot
 from core.assessment_summary import AssessmentSummary
-from core.assessment_trend import AssessmentTrend
+from core.assessment_trend_service import AssessmentTrendService
 from core.config import K9Config
 from core.context import AssessmentContext
 from core.evidence import EvidenceStore
@@ -44,6 +43,14 @@ class K9Core:
         persistence = self._require_persistence()
 
         return AssessmentQuery(persistence)
+
+    def _require_assessment_trend_service(
+        self,
+    ) -> AssessmentTrendService:
+        """Return the assessment trend service for configured persistence."""
+        query = self._require_assessment_query()
+
+        return AssessmentTrendService(query)
 
     def load_modules(self, path: str = "config/modules.json"):
         self.loader.load_from_file(path)
@@ -348,47 +355,39 @@ class K9Core:
         self,
         target: str,
     ) -> dict:
-        """Summarise finding-count trends across a target's assessments."""
-        comparisons = self.compare_assessment_history_for_target(
-            target
-        )
+        """Summarise assessment trends for a target."""
+        service = self._require_assessment_trend_service()
 
-        return AssessmentTrend().summarise(comparisons)
+        return service.summarise_assessment_trend_for_target(
+            target,
+        )
 
     def analyse_assessment_trend_for_target(
         self,
         target: str,
     ) -> dict:
-        """Analyse the descriptive state of a target's assessment trend."""
-        trend = self.summarise_assessment_trend_for_target(target)
+        """Analyse the descriptive trend state for a target."""
+        service = self._require_assessment_trend_service()
 
-        return AssessmentIntelligence().analyse(trend)
+        return service.analyse_assessment_trend_for_target(
+            target,
+        )
 
     def analyse_assessment_trends_for_all_targets(
         self,
     ) -> dict[str, dict]:
         """Analyse assessment trends for every persisted target."""
-        targets = self.list_assessment_targets()
+        service = self._require_assessment_trend_service()
 
-        return {
-            target: self.analyse_assessment_trend_for_target(
-                target,
-            )
-            for target in targets
-        }
+        return service.analyse_assessment_trends_for_all_targets()
 
     def summarise_assessment_trends_for_all_targets(
         self,
     ) -> dict[str, dict]:
         """Summarise assessment trends for every persisted target."""
-        targets = self.list_assessment_targets()
+        service = self._require_assessment_trend_service()
 
-        return {
-            target: self.summarise_assessment_trend_for_target(
-                target,
-            )
-            for target in targets
-        }
+        return service.summarise_assessment_trends_for_all_targets()
 
     def compare_latest_assessment_snapshots_for_all_targets(
         self,
