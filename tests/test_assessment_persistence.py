@@ -1013,3 +1013,95 @@ def test_k9_core_assessment_target_listing_requires_persistence():
         assert str(exc) == "Assessment persistence is not configured."
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_can_group_persisted_assessment_snapshots_by_target(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    snapshots = (
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="localhost",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=3,
+            severity_counts={"info": 3},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="localhost",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-004",
+            target="10.0.0.5",
+            started_at="2026-09-29T15:00:00+00:00",
+            finding_count=4,
+            severity_counts={"info": 4},
+            sources=["network_interfaces"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="192.168.1.20",
+            started_at="2026-09-29T13:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-005",
+            target="localhost",
+            started_at="2026-09-29T16:00:00+00:00",
+            finding_count=5,
+            severity_counts={"info": 5},
+            sources=["host_intelligence"],
+        ),
+    )
+
+    for snapshot in snapshots:
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    grouped = k9.list_assessment_snapshots_by_target()
+
+    assert list(grouped) == [
+        "10.0.0.5",
+        "192.168.1.20",
+        "localhost",
+    ]
+
+    assert [
+        snapshot.assessment_id
+        for snapshot in grouped["localhost"]
+    ] == [
+        "assessment-001",
+        "assessment-003",
+        "assessment-005",
+    ]
+
+
+def test_k9_core_returns_empty_target_snapshot_groups_when_none_are_persisted(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    k9 = K9Core(persistence=persistence)
+
+    assert k9.list_assessment_snapshots_by_target() == {}
+
+
+def test_k9_core_target_snapshot_grouping_requires_persistence():
+    k9 = K9Core()
+
+    try:
+        k9.list_assessment_snapshots_by_target()
+    except RuntimeError as exc:
+        assert str(exc) == "Assessment persistence is not configured."
+    else:
+        raise AssertionError("Expected RuntimeError")

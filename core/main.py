@@ -209,6 +209,35 @@ class K9Core:
             }
         )
 
+    def list_assessment_snapshots_by_target(
+        self,
+    ) -> dict[str, list[AssessmentSnapshot]]:
+        """Group persisted assessment snapshots by target chronologically."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        grouped: dict[str, list[AssessmentSnapshot]] = {}
+
+        for snapshot in self.list_assessment_snapshots():
+            grouped.setdefault(
+                snapshot.target,
+                [],
+            ).append(snapshot)
+
+        for target in grouped:
+            grouped[target].sort(
+                key=lambda snapshot: snapshot.started_at,
+            )
+
+        return dict(
+            sorted(
+                grouped.items(),
+                key=lambda item: item[0],
+            )
+        )
+
     def get_latest_assessment_snapshot(
         self,
     ) -> AssessmentSnapshot | None:
@@ -238,15 +267,9 @@ class K9Core:
                 "Assessment persistence is not configured."
             )
 
-        snapshots = [
-            snapshot
-            for snapshot in self.list_assessment_snapshots()
-            if snapshot.target == target
-        ]
-
-        return sorted(
-            snapshots,
-            key=lambda snapshot: snapshot.started_at,
+        return self.list_assessment_snapshots_by_target().get(
+            target,
+            [],
         )
 
     def get_latest_assessment_snapshot_for_target(
