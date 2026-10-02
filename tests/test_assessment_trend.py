@@ -193,3 +193,45 @@ def test_assessment_trend_summarises_module_execution_changes():
         "succeeded": 1,
         "failed": 0,
     }
+
+
+def test_assessment_trend_summarises_source_changes():
+    comparisons = [
+        {
+            "finding_count_change": 1,
+            "new_sources": ["network_interfaces"],
+            "removed_sources": [],
+        },
+        {
+            "finding_count_change": 0,
+            "new_sources": ["host_profile"],
+            "removed_sources": ["network_interfaces"],
+        },
+        {
+            "finding_count_change": -1,
+            "new_sources": [],
+            "removed_sources": ["host_profile"],
+        },
+    ]
+
+    result = AssessmentTrend().summarise(comparisons)
+
+    assert result["source_changes"] == {
+        "new": 2,
+        "removed": 2,
+    }
+
+
+def test_assessment_trend_preserves_legacy_source_history_compatibility():
+    comparisons = [
+        {
+            "finding_count_change": 2,
+        },
+        {
+            "finding_count_change": -1,
+        },
+    ]
+
+    result = AssessmentTrend().summarise(comparisons)
+
+    assert "source_changes" not in result

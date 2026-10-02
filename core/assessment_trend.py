@@ -32,6 +32,12 @@ class AssessmentTrend:
         }
         has_module_execution_history = False
 
+        source_changes = {
+            "new": 0,
+            "removed": 0,
+        }
+        has_source_history = False
+
         for comparison in comparisons:
             severity_counts = comparison.get("severity_counts")
 
@@ -84,6 +90,15 @@ class AssessmentTrend:
                     for metric, delta in deltas.items():
                         module_execution_changes[metric] += delta
 
+            new_sources = comparison.get("new_sources")
+            removed_sources = comparison.get("removed_sources")
+
+            if new_sources or removed_sources:
+                has_source_history = True
+
+                source_changes["new"] += len(new_sources or [])
+                source_changes["removed"] += len(removed_sources or [])
+
         if not comparisons:
             latest_change = None
             latest_direction = "no_history"
@@ -117,5 +132,8 @@ class AssessmentTrend:
             result["module_execution_changes"] = dict(
                 module_execution_changes
             )
+
+        if has_source_history:
+            result["source_changes"] = dict(source_changes)
 
         return result
