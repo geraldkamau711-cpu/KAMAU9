@@ -429,19 +429,31 @@ class K9Core:
         self,
     ) -> dict[str, dict]:
         """Compare the two most recent persisted snapshots for each target."""
-        targets = self.list_assessment_targets()
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        latest_snapshots = (
+            self.get_latest_assessment_snapshots_by_target()
+        )
+
+        snapshots_by_target = self.list_assessment_snapshots_by_target()
 
         comparisons = {}
 
-        for target in targets:
-            comparison = (
-                self.compare_latest_assessment_snapshots_for_target(
-                    target,
-                )
-            )
+        for target, current in latest_snapshots.items():
+            snapshots = snapshots_by_target[target]
 
-            if comparison is not None:
-                comparisons[target] = comparison
+            if len(snapshots) < 2:
+                continue
+
+            previous = snapshots[-2]
+
+            comparisons[target] = self.compare_assessment_snapshots(
+                previous.assessment_id,
+                current.assessment_id,
+            )
 
         return comparisons
 

@@ -1276,3 +1276,67 @@ def test_k9_core_latest_snapshot_mapping_requires_persistence():
         assert str(exc) == "Assessment persistence is not configured."
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_k9_core_compares_latest_assessment_snapshots_for_all_targets(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+
+    snapshots = (
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="localhost",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=1,
+            severity_counts={"info": 1},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="localhost",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=3,
+            severity_counts={"info": 3},
+            sources=["host_intelligence"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="10.0.0.5",
+            started_at="2026-09-29T13:00:00+00:00",
+            finding_count=2,
+            severity_counts={"low": 2},
+            sources=["network_interfaces"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-004",
+            target="10.0.0.5",
+            started_at="2026-09-29T15:00:00+00:00",
+            finding_count=4,
+            severity_counts={"low": 4},
+            sources=["network_interfaces"],
+        ),
+    )
+
+    for snapshot in snapshots:
+        persistence.save(snapshot)
+
+    k9 = K9Core(persistence=persistence)
+
+    comparisons = k9.compare_latest_assessment_snapshots_for_all_targets()
+
+    assert sorted(comparisons) == ["10.0.0.5", "localhost"]
+
+    assert comparisons["10.0.0.5"]["previous_assessment_id"] == (
+        "assessment-003"
+    )
+    assert comparisons["10.0.0.5"]["current_assessment_id"] == (
+        "assessment-004"
+    )
+
+    assert comparisons["localhost"]["previous_assessment_id"] == (
+        "assessment-001"
+    )
+    assert comparisons["localhost"]["current_assessment_id"] == (
+        "assessment-002"
+    )
