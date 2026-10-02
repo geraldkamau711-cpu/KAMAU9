@@ -1621,3 +1621,46 @@ def test_k9_core_snapshot_pair_history_requires_persistence():
         raise AssertionError(
             "Expected RuntimeError when persistence is not configured."
         )
+
+
+def test_k9_core_assessment_targets_are_derived_from_grouped_snapshots(
+    tmp_path,
+):
+    persistence = AssessmentPersistence(tmp_path)
+    core = K9Core(persistence=persistence)
+
+    snapshots = [
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="192.168.1.20",
+            started_at="2026-10-02T12:00:00",
+            finding_count=1,
+            severity_counts={"low": 1},
+            sources=["module-a"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="localhost",
+            started_at="2026-10-02T10:00:00",
+            finding_count=1,
+            severity_counts={"low": 1},
+            sources=["module-a"],
+        ),
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="10.0.0.5",
+            started_at="2026-10-02T11:00:00",
+            finding_count=1,
+            severity_counts={"low": 1},
+            sources=["module-a"],
+        ),
+    ]
+
+    for snapshot in snapshots:
+        persistence.save(snapshot)
+
+    assert core.list_assessment_targets() == [
+        "10.0.0.5",
+        "192.168.1.20",
+        "localhost",
+    ]

@@ -202,11 +202,8 @@ class K9Core:
                 "Assessment persistence is not configured."
             )
 
-        return sorted(
-            {
-                snapshot.target
-                for snapshot in self.list_assessment_snapshots()
-            }
+        return list(
+            self.list_assessment_snapshots_by_target().keys()
         )
 
     def list_assessment_snapshots_by_target(
