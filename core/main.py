@@ -29,6 +29,15 @@ class K9Core:
         self.evidence = EvidenceStore()
         self.context: AssessmentContext | None = None
 
+    def _require_persistence(self) -> AssessmentPersistence:
+        """Return the configured assessment persistence layer."""
+        if self.persistence is None:
+            raise RuntimeError(
+                "Assessment persistence is not configured."
+            )
+
+        return self.persistence
+
     def load_modules(self, path: str = "config/modules.json"):
         self.loader.load_from_file(path)
 
@@ -152,13 +161,10 @@ class K9Core:
 
     def save_assessment_snapshot(self) -> AssessmentSnapshot:
         """Create and persist the current assessment snapshot."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         snapshot = self.create_assessment_snapshot()
-        self.persistence.save(snapshot)
+        persistence.save(snapshot)
 
         return snapshot
 
@@ -167,40 +173,28 @@ class K9Core:
         assessment_id: str,
     ) -> AssessmentSnapshot:
         """Load a persisted assessment snapshot."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
-        return self.persistence.load(assessment_id)
+        return persistence.load(assessment_id)
 
     def list_assessments(self) -> list[str]:
         """List persisted assessment IDs."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
-        return self.persistence.list_assessments()
+        return persistence.list_assessments()
 
     def list_assessment_snapshots(self) -> list[AssessmentSnapshot]:
         """Load all persisted assessment snapshots in deterministic order."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         return [
-            self.persistence.load(assessment_id)
-            for assessment_id in self.persistence.list_assessments()
+            persistence.load(assessment_id)
+            for assessment_id in persistence.list_assessments()
         ]
 
     def list_assessment_targets(self) -> list[str]:
         """List persisted assessment targets in deterministic order."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         return list(
             self.list_assessment_snapshots_by_target().keys()
@@ -210,10 +204,7 @@ class K9Core:
         self,
     ) -> dict[str, list[AssessmentSnapshot]]:
         """Group persisted assessment snapshots by target chronologically."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         grouped: dict[str, list[AssessmentSnapshot]] = {}
 
@@ -239,10 +230,7 @@ class K9Core:
         self,
     ) -> dict[str, AssessmentSnapshot]:
         """Load the latest persisted assessment snapshot for each target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         grouped = self.list_assessment_snapshots_by_target()
 
@@ -256,10 +244,7 @@ class K9Core:
         self,
     ) -> dict[str, tuple[AssessmentSnapshot, AssessmentSnapshot]]:
         """Load the previous and latest persisted snapshot for each target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         grouped = self.list_assessment_snapshots_by_target()
 
@@ -274,10 +259,7 @@ class K9Core:
         target: str,
     ) -> tuple[AssessmentSnapshot, AssessmentSnapshot] | None:
         """Load the previous and latest persisted snapshot for a target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         return self.get_latest_assessment_snapshot_pairs_by_target().get(
             target,
@@ -287,10 +269,7 @@ class K9Core:
         self,
     ) -> AssessmentSnapshot | None:
         """Load the most recently started persisted assessment snapshot."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         snapshots = self.list_assessment_snapshots()
 
@@ -307,10 +286,7 @@ class K9Core:
         target: str,
     ) -> list[AssessmentSnapshot]:
         """Load persisted assessment snapshots for a target chronologically."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         return self.list_assessment_snapshots_by_target().get(
             target,
@@ -324,10 +300,7 @@ class K9Core:
         tuple[AssessmentSnapshot, AssessmentSnapshot]
     ]:
         """Load consecutive persisted snapshot pairs for a target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         snapshots = self.list_assessment_snapshots_for_target(
             target,
@@ -345,10 +318,7 @@ class K9Core:
         target: str,
     ) -> AssessmentSnapshot | None:
         """Load the most recently started snapshot for a target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         return self.get_latest_assessment_snapshots_by_target().get(
             target,
@@ -360,10 +330,7 @@ class K9Core:
         current_assessment_id: str,
     ) -> dict:
         """Compare two persisted assessment snapshots."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         previous = self.load_assessment_snapshot(
             previous_assessment_id,
@@ -382,10 +349,7 @@ class K9Core:
         target: str,
     ) -> dict | None:
         """Compare the two most recent persisted snapshots for a target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         snapshot_pair = (
             self.get_latest_assessment_snapshot_pair_for_target(
@@ -408,10 +372,7 @@ class K9Core:
         target: str,
     ) -> list[dict]:
         """Compare every consecutive persisted snapshot for a target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         snapshot_pairs = (
             self.list_assessment_snapshot_pairs_for_target(
@@ -477,10 +438,7 @@ class K9Core:
         self,
     ) -> dict[str, dict]:
         """Compare the two most recent persisted snapshots for each target."""
-        if self.persistence is None:
-            raise RuntimeError(
-                "Assessment persistence is not configured."
-            )
+        persistence = self._require_persistence()
 
         snapshot_pairs = (
             self.get_latest_assessment_snapshot_pairs_by_target()
