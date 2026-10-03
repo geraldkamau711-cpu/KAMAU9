@@ -11,10 +11,11 @@ class AssessmentTrendService:
     def __init__(
         self,
         comparison_service: AssessmentComparisonService,
+        intelligence: AssessmentIntelligence | None = None,
     ):
         self.comparison_service = comparison_service
         self.trend = AssessmentTrend()
-        self.intelligence = AssessmentIntelligence()
+        self.intelligence = intelligence or AssessmentIntelligence()
 
     def summarise_assessment_trend_for_target(
         self,

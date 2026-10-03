@@ -183,3 +183,17 @@ def test_service_analyse_trends_for_all_targets(tmp_path):
 
     assert result["host-b"]["state"] == "decreased"
     assert result["host-b"]["finding_count_change"] == -1
+
+
+def test_service_accepts_assessment_intelligence():
+    from core.assessment_intelligence import AssessmentIntelligence
+
+    comparison_service = object()
+    intelligence = AssessmentIntelligence()
+
+    service = AssessmentTrendService(
+        comparison_service,
+        intelligence=intelligence,
+    )
+
+    assert service.intelligence is intelligence
