@@ -327,3 +327,62 @@ def test_k9_core_exposes_assessment_trend_service(tmp_path):
     from core.assessment_trend_service import AssessmentTrendService
 
     assert isinstance(service, AssessmentTrendService)
+
+
+def test_k9_core_analyse_assessment_trend_aggregates_history(tmp_path):
+    core = K9Core()
+    core.persistence = core.persistence or __import__(
+        "core.assessment_persistence",
+        fromlist=["AssessmentPersistence"],
+    ).AssessmentPersistence(tmp_path)
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-001",
+            target="localhost",
+            started_at="2026-09-29T12:00:00+00:00",
+            finding_count=2,
+            severity_counts={"info": 2},
+            sources=["host"],
+        )
+    )
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-002",
+            target="localhost",
+            started_at="2026-09-29T13:00:00+00:00",
+            finding_count=5,
+            severity_counts={"info": 3, "warning": 2},
+            sources=["host", "network"],
+        )
+    )
+
+    core.persistence.save(
+        AssessmentSnapshot(
+            assessment_id="assessment-003",
+            target="localhost",
+            started_at="2026-09-29T14:00:00+00:00",
+            finding_count=4,
+            severity_counts={"info": 2, "warning": 2},
+            sources=["host", "network"],
+        )
+    )
+
+    result = core.analyse_assessment_trend_for_target(
+        "localhost",
+    )
+
+    assert result == {
+        "state": "decreased",
+        "finding_count_change": 2,
+        "latest_direction": "decreased",
+        "severity_changes": {
+            "info": 0,
+            "warning": 2,
+        },
+        "source_changes": {
+            "new": 1,
+            "removed": 0,
+        },
+    }
