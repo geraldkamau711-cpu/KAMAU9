@@ -310,3 +310,48 @@ def test_query_gets_latest_snapshot_for_target(tmp_path):
 
     assert latest is not None
     assert latest.assessment_id == "assessment-002"
+
+
+def test_query_lists_assessment_ids(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    persistence.save(
+        make_snapshot(
+            "assessment-002",
+            "host-a",
+            "2026-09-29T13:00:00+00:00",
+        )
+    )
+    persistence.save(
+        make_snapshot(
+            "assessment-001",
+            "host-a",
+            "2026-09-29T12:00:00+00:00",
+        )
+    )
+
+    query = AssessmentQuery(persistence)
+
+    assert query.list_assessment_ids() == [
+        "assessment-001",
+        "assessment-002",
+    ]
+
+
+def test_query_gets_snapshot_by_id(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    persistence.save(
+        make_snapshot(
+            "assessment-001",
+            "host-a",
+            "2026-09-29T12:00:00+00:00",
+        )
+    )
+
+    query = AssessmentQuery(persistence)
+
+    result = query.get_snapshot("assessment-001")
+
+    assert result.assessment_id == "assessment-001"
+    assert result.target == "host-a"

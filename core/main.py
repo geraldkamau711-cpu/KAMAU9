@@ -197,15 +197,15 @@ class K9Core:
         assessment_id: str,
     ) -> AssessmentSnapshot:
         """Load a persisted assessment snapshot."""
-        persistence = self._require_persistence()
+        query = self._require_assessment_query()
 
-        return persistence.load(assessment_id)
+        return query.get_snapshot(assessment_id)
 
     def list_assessments(self) -> list[str]:
         """List persisted assessment IDs."""
-        persistence = self._require_persistence()
+        query = self._require_assessment_query()
 
-        return persistence.list_assessments()
+        return query.list_assessment_ids()
 
     def list_assessment_snapshots(self) -> list[AssessmentSnapshot]:
         """Load all persisted assessment snapshots in deterministic order."""

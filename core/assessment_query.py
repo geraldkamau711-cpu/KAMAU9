@@ -15,11 +15,15 @@ class AssessmentQuery:
         """Load one persisted assessment snapshot by ID."""
         return self.persistence.load(assessment_id)
 
+    def list_assessment_ids(self) -> list[str]:
+        """List persisted assessment IDs in deterministic order."""
+        return self.persistence.list_assessments()
+
     def list_snapshots(self) -> list[AssessmentSnapshot]:
         """Load all persisted assessment snapshots in deterministic order."""
         return [
-            self.persistence.load(assessment_id)
-            for assessment_id in self.persistence.list_assessments()
+            self.get_snapshot(assessment_id)
+            for assessment_id in self.list_assessment_ids()
         ]
 
     def list_targets(self) -> list[str]:
