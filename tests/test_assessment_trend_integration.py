@@ -386,3 +386,22 @@ def test_k9_core_analyse_assessment_trend_aggregates_history(tmp_path):
             "removed": 0,
         },
     }
+
+
+def test_k9_core_injects_assessment_intelligence_into_trend_service(
+    tmp_path,
+):
+    from core.assessment_intelligence import AssessmentIntelligence
+    from core.assessment_persistence import AssessmentPersistence
+
+    persistence = AssessmentPersistence(tmp_path)
+    intelligence = AssessmentIntelligence()
+
+    core = K9Core(
+        persistence=persistence,
+        intelligence=intelligence,
+    )
+
+    service = core._require_assessment_trend_service()
+
+    assert service.intelligence is intelligence

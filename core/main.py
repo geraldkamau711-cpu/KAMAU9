@@ -1,4 +1,5 @@
 from core.assessment_comparison_service import AssessmentComparisonService
+from core.assessment_intelligence import AssessmentIntelligence
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_query import AssessmentQuery
 from core.assessment_snapshot import AssessmentSnapshot
@@ -20,9 +21,11 @@ class K9Core:
         self,
         config: K9Config | None = None,
         persistence: AssessmentPersistence | None = None,
+        intelligence: AssessmentIntelligence | None = None,
     ):
         self.config = config or K9Config()
         self.persistence = persistence
+        self.intelligence = intelligence or AssessmentIntelligence()
         self.logger = get_logger("K9")
         self.registry = ModuleRegistry()
         self.loader = ModuleLoader(self.registry, mode=self.config.mode)
@@ -60,7 +63,10 @@ class K9Core:
             self._require_assessment_comparison_service()
         )
 
-        return AssessmentTrendService(comparison_service)
+        return AssessmentTrendService(
+            comparison_service,
+            intelligence=self.intelligence,
+        )
 
     def load_modules(self, path: str = "config/modules.json"):
         self.loader.load_from_file(path)
