@@ -1,4 +1,7 @@
-from core.assessment_comparison import AssessmentComparison
+from core.assessment_comparison import (
+    AssessmentComparison,
+    AssessmentComparisonResult,
+)
 from core.assessment_query import AssessmentQuery
 
 
@@ -17,7 +20,7 @@ class AssessmentComparisonService:
         self,
         previous_assessment_id: str,
         current_assessment_id: str,
-    ) -> dict:
+    ) -> AssessmentComparisonResult:
         """Compare two persisted assessment snapshots."""
         previous = self.query.get_snapshot(
             previous_assessment_id,
@@ -34,7 +37,7 @@ class AssessmentComparisonService:
     def compare_latest_assessment_snapshots_for_target(
         self,
         target: str,
-    ) -> dict | None:
+    ) -> AssessmentComparisonResult | None:
         """Compare the two most recent persisted snapshots for a target."""
         snapshot_pair = self.query.get_latest_snapshot_pair_for_target(
             target,
@@ -53,7 +56,7 @@ class AssessmentComparisonService:
     def compare_assessment_history_for_target(
         self,
         target: str,
-    ) -> list[dict]:
+    ) -> list[AssessmentComparisonResult]:
         """Compare every consecutive persisted snapshot for a target."""
         snapshot_pairs = self.query.list_snapshot_pairs_for_target(
             target,
@@ -69,7 +72,7 @@ class AssessmentComparisonService:
 
     def compare_latest_assessment_snapshots_for_all_targets(
         self,
-    ) -> dict[str, dict]:
+    ) -> dict[str, AssessmentComparisonResult]:
         """Compare the two most recent persisted snapshots for each target."""
         snapshot_pairs = (
             self.query.get_latest_snapshot_pairs_by_target()
