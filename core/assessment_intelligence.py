@@ -1,3 +1,6 @@
+from core.assessment_trend_result import AssessmentTrendResult
+
+
 class AssessmentIntelligence:
     """Derive a descriptive state from an assessment trend summary."""
 
@@ -19,7 +22,10 @@ class AssessmentIntelligence:
             f"Unsupported assessment trend direction: {direction!r}"
         )
 
-    def analyse(self, trend: dict) -> dict:
+    def analyse(
+        self,
+        trend: AssessmentTrendResult,
+    ) -> dict:
         """Return a deterministic assessment state from trend data."""
         direction = trend["latest_direction"]
         state = self._derive_state(direction)
