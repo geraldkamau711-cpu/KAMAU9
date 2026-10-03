@@ -19,10 +19,10 @@ class AssessmentComparisonService:
         current_assessment_id: str,
     ) -> dict:
         """Compare two persisted assessment snapshots."""
-        previous = self.query.persistence.load(
+        previous = self.query.get_snapshot(
             previous_assessment_id,
         )
-        current = self.query.persistence.load(
+        current = self.query.get_snapshot(
             current_assessment_id,
         )
 

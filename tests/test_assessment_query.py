@@ -47,6 +47,25 @@ def test_query_lists_persisted_snapshots(tmp_path):
     ]
 
 
+def test_query_gets_snapshot_by_id(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+
+    persistence.save(
+        make_snapshot(
+            "assessment-001",
+            "host-a",
+            "2026-09-29T12:00:00+00:00",
+        )
+    )
+
+    query = AssessmentQuery(persistence)
+
+    result = query.get_snapshot("assessment-001")
+
+    assert result.assessment_id == "assessment-001"
+    assert result.target == "host-a"
+
+
 def test_query_lists_targets_deterministically(tmp_path):
     persistence = AssessmentPersistence(tmp_path)
 

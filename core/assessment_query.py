@@ -8,6 +8,13 @@ class AssessmentQuery:
     def __init__(self, persistence: AssessmentPersistence):
         self.persistence = persistence
 
+    def get_snapshot(
+        self,
+        assessment_id: str,
+    ) -> AssessmentSnapshot:
+        """Load one persisted assessment snapshot by ID."""
+        return self.persistence.load(assessment_id)
+
     def list_snapshots(self) -> list[AssessmentSnapshot]:
         """Load all persisted assessment snapshots in deterministic order."""
         return [
