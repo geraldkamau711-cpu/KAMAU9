@@ -277,3 +277,22 @@ def test_assessment_intelligence_preserves_all_trend_dimensions():
             "removed": 1,
         },
     }
+
+
+def test_assessment_intelligence_derives_increased_state():
+    intelligence = AssessmentIntelligence()
+
+    assert intelligence._derive_state("increased") == "increased"
+
+
+def test_assessment_intelligence_rejects_unknown_state_direction():
+    intelligence = AssessmentIntelligence()
+
+    try:
+        intelligence._derive_state("unknown")
+    except ValueError as exc:
+        assert str(exc) == (
+            "Unsupported assessment trend direction: 'unknown'"
+        )
+    else:
+        raise AssertionError("Expected ValueError")

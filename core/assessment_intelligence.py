@@ -1,22 +1,28 @@
 class AssessmentIntelligence:
     """Derive a descriptive state from an assessment trend summary."""
 
+    def _derive_state(self, direction: str) -> str:
+        """Map an assessment trend direction to a descriptive state."""
+        if direction == "increased":
+            return "increased"
+
+        if direction == "decreased":
+            return "decreased"
+
+        if direction == "unchanged":
+            return "stable"
+
+        if direction == "no_history":
+            return "no_history"
+
+        raise ValueError(
+            f"Unsupported assessment trend direction: {direction!r}"
+        )
+
     def analyse(self, trend: dict) -> dict:
         """Return a deterministic assessment state from trend data."""
         direction = trend["latest_direction"]
-
-        if direction == "increased":
-            state = "increased"
-        elif direction == "decreased":
-            state = "decreased"
-        elif direction == "unchanged":
-            state = "stable"
-        elif direction == "no_history":
-            state = "no_history"
-        else:
-            raise ValueError(
-                f"Unsupported assessment trend direction: {direction!r}"
-            )
+        state = self._derive_state(direction)
 
         result = {
             "state": state,
