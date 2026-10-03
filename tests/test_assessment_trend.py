@@ -235,3 +235,39 @@ def test_assessment_trend_preserves_legacy_source_history_compatibility():
     result = AssessmentTrend().summarise(comparisons)
 
     assert "source_changes" not in result
+
+
+def test_assessment_trend_returns_typed_result():
+    from core.assessment_trend_result import AssessmentTrendResult
+
+    result = AssessmentTrend().summarise(
+        [
+            {
+                "finding_count_change": 2,
+            },
+        ]
+    )
+
+    assert isinstance(result, AssessmentTrendResult)
+
+
+def test_assessment_trend_result_preserves_dictionary_compatibility():
+    result = AssessmentTrend().summarise(
+        [
+            {
+                "finding_count_change": 2,
+            },
+        ]
+    )
+
+    assert result["latest_direction"] == "increased"
+    assert result["total_finding_count_change"] == 2
+    assert result == {
+        "comparison_count": 1,
+        "total_finding_count_change": 2,
+        "increases": 1,
+        "decreases": 0,
+        "unchanged": 0,
+        "latest_change": 2,
+        "latest_direction": "increased",
+    }

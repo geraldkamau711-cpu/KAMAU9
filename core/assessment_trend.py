@@ -1,7 +1,13 @@
+from core.assessment_trend_result import AssessmentTrendResult
+
+
 class AssessmentTrend:
     """Summarise objective changes across assessment comparisons."""
 
-    def summarise(self, comparisons: list[dict]) -> dict:
+    def summarise(
+        self,
+        comparisons: list[dict],
+    ) -> AssessmentTrendResult:
         """Return deterministic trend information from comparisons."""
 
         increases = sum(
@@ -97,7 +103,9 @@ class AssessmentTrend:
                 has_source_history = True
 
                 source_changes["new"] += len(new_sources or [])
-                source_changes["removed"] += len(removed_sources or [])
+                source_changes["removed"] += len(
+                    removed_sources or []
+                )
 
         if not comparisons:
             latest_change = None
@@ -112,28 +120,30 @@ class AssessmentTrend:
             else:
                 latest_direction = "unchanged"
 
-        result = {
-            "comparison_count": len(comparisons),
-            "total_finding_count_change": total_change,
-            "increases": increases,
-            "decreases": decreases,
-            "unchanged": unchanged,
-            "latest_change": latest_change,
-            "latest_direction": latest_direction,
-        }
-
-        if has_severity_history:
-            result["severity_changes"] = {
-                severity: severity_changes[severity]
-                for severity in sorted(severity_changes)
-            }
-
-        if has_module_execution_history:
-            result["module_execution_changes"] = dict(
-                module_execution_changes
-            )
-
-        if has_source_history:
-            result["source_changes"] = dict(source_changes)
-
-        return result
+        return AssessmentTrendResult(
+            comparison_count=len(comparisons),
+            total_finding_count_change=total_change,
+            increases=increases,
+            decreases=decreases,
+            unchanged=unchanged,
+            latest_change=latest_change,
+            latest_direction=latest_direction,
+            severity_changes=(
+                {
+                    severity: severity_changes[severity]
+                    for severity in sorted(severity_changes)
+                }
+                if has_severity_history
+                else {}
+            ),
+            module_execution_changes=(
+                dict(module_execution_changes)
+                if has_module_execution_history
+                else {}
+            ),
+            source_changes=(
+                dict(source_changes)
+                if has_source_history
+                else {}
+            ),
+        )
