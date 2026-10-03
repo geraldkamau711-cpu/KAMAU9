@@ -1,3 +1,6 @@
+from core.assessment_intelligence_result import (
+    AssessmentIntelligenceResult,
+)
 from core.assessment_trend_result import AssessmentTrendResult
 
 
@@ -25,30 +28,28 @@ class AssessmentIntelligence:
     def analyse(
         self,
         trend: AssessmentTrendResult,
-    ) -> dict:
-        """Return a deterministic assessment state from trend data."""
+    ) -> AssessmentIntelligenceResult:
+        """Return a deterministic assessment intelligence result."""
         direction = trend["latest_direction"]
         state = self._derive_state(direction)
 
-        result = {
-            "state": state,
-            "finding_count_change": trend["total_finding_count_change"],
-            "latest_direction": direction,
-        }
-
-        if "severity_changes" in trend:
-            result["severity_changes"] = dict(
-                trend["severity_changes"]
-            )
-
-        if "module_execution_changes" in trend:
-            result["module_execution_changes"] = dict(
-                trend["module_execution_changes"]
-            )
-
-        if "source_changes" in trend:
-            result["source_changes"] = dict(
-                trend["source_changes"]
-            )
-
-        return result
+        return AssessmentIntelligenceResult(
+            state=state,
+            finding_count_change=trend["total_finding_count_change"],
+            latest_direction=direction,
+            severity_changes=(
+                dict(trend["severity_changes"])
+                if "severity_changes" in trend
+                else {}
+            ),
+            module_execution_changes=(
+                dict(trend["module_execution_changes"])
+                if "module_execution_changes" in trend
+                else {}
+            ),
+            source_changes=(
+                dict(trend["source_changes"])
+                if "source_changes" in trend
+                else {}
+            ),
+        )

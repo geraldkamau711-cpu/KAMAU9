@@ -296,3 +296,64 @@ def test_assessment_intelligence_rejects_unknown_state_direction():
         )
     else:
         raise AssertionError("Expected ValueError")
+
+
+def test_assessment_intelligence_returns_typed_result():
+    from core.assessment_intelligence_result import (
+        AssessmentIntelligenceResult,
+    )
+
+    result = AssessmentIntelligence().analyse(
+        {
+            "comparison_count": 1,
+            "total_finding_count_change": 2,
+            "increases": 1,
+            "decreases": 0,
+            "unchanged": 0,
+            "latest_change": 2,
+            "latest_direction": "increased",
+        }
+    )
+
+    assert isinstance(result, AssessmentIntelligenceResult)
+    assert result["state"] == "increased"
+    assert result["finding_count_change"] == 2
+    assert result["latest_direction"] == "increased"
+
+
+def test_assessment_intelligence_result_preserves_optional_dimensions():
+    from core.assessment_intelligence_result import (
+        AssessmentIntelligenceResult,
+    )
+
+    result = AssessmentIntelligenceResult(
+        state="increased",
+        finding_count_change=3,
+        latest_direction="increased",
+        severity_changes={"warning": 2},
+        module_execution_changes={
+            "total": 1,
+            "succeeded": 1,
+            "failed": 0,
+        },
+        source_changes={
+            "new": 2,
+            "removed": 1,
+        },
+    )
+
+    assert result == {
+        "state": "increased",
+        "finding_count_change": 3,
+        "latest_direction": "increased",
+        "severity_changes": {"warning": 2},
+        "module_execution_changes": {
+            "total": 1,
+            "succeeded": 1,
+            "failed": 0,
+        },
+        "source_changes": {
+            "new": 2,
+            "removed": 1,
+        },
+    }
