@@ -204,3 +204,30 @@ def test_assessment_intelligence_reports_module_execution_changes():
             "failed": 0,
         },
     }
+
+def test_assessment_intelligence_reports_source_changes():
+    result = AssessmentIntelligence().analyse(
+        {
+            "comparison_count": 1,
+            "total_finding_count_change": 1,
+            "increases": 1,
+            "decreases": 0,
+            "unchanged": 0,
+            "latest_change": 1,
+            "latest_direction": "increased",
+            "source_changes": {
+                "new": 2,
+                "removed": 1,
+            },
+        }
+    )
+
+    assert result == {
+        "state": "increased",
+        "finding_count_change": 1,
+        "latest_direction": "increased",
+        "source_changes": {
+            "new": 2,
+            "removed": 1,
+        },
+    }

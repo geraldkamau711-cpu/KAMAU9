@@ -34,4 +34,9 @@ class AssessmentIntelligence:
                 trend["module_execution_changes"]
             )
 
+        if "source_changes" in trend:
+            result["source_changes"] = dict(
+                trend["source_changes"]
+            )
+
         return result
