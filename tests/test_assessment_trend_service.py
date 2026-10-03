@@ -1,3 +1,4 @@
+from core.assessment_comparison_service import AssessmentComparisonService
 from core.assessment_persistence import AssessmentPersistence
 from core.assessment_query import AssessmentQuery
 from core.assessment_snapshot import AssessmentSnapshot
@@ -23,11 +24,22 @@ def make_snapshot(
 def make_service(tmp_path):
     persistence = AssessmentPersistence(tmp_path)
     query = AssessmentQuery(persistence)
+    comparison_service = AssessmentComparisonService(query)
 
     return (
         persistence,
-        AssessmentTrendService(query),
+        AssessmentTrendService(comparison_service),
     )
+
+
+def test_service_accepts_comparison_service(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+    query = AssessmentQuery(persistence)
+    comparison_service = AssessmentComparisonService(query)
+
+    service = AssessmentTrendService(comparison_service)
+
+    assert service.comparison_service is comparison_service
 
 
 def test_service_summarises_target_trend(tmp_path):
@@ -56,6 +68,7 @@ def test_service_summarises_target_trend(tmp_path):
 
     assert result["comparison_count"] == 1
     assert result["total_finding_count_change"] == 3
+    assert result["latest_change"] == 3
     assert result["latest_direction"] == "increased"
 
 
@@ -121,8 +134,13 @@ def test_service_summarises_trends_for_all_targets(tmp_path):
 
     result = service.summarise_assessment_trends_for_all_targets()
 
+    assert set(result) == {"host-a", "host-b"}
+
     assert result["host-a"]["total_finding_count_change"] == 2
+    assert result["host-a"]["latest_direction"] == "increased"
+
     assert result["host-b"]["total_finding_count_change"] == -1
+    assert result["host-b"]["latest_direction"] == "decreased"
 
 
 def test_service_analyse_trends_for_all_targets(tmp_path):
@@ -158,5 +176,10 @@ def test_service_analyse_trends_for_all_targets(tmp_path):
 
     result = service.analyse_assessment_trends_for_all_targets()
 
+    assert set(result) == {"host-a", "host-b"}
+
     assert result["host-a"]["state"] == "increased"
+    assert result["host-a"]["finding_count_change"] == 2
+
     assert result["host-b"]["state"] == "decreased"
+    assert result["host-b"]["finding_count_change"] == -1

@@ -2,15 +2,17 @@ from core.assessment_comparison_service import (
     AssessmentComparisonService,
 )
 from core.assessment_intelligence import AssessmentIntelligence
-from core.assessment_query import AssessmentQuery
 from core.assessment_trend import AssessmentTrend
 
 
 class AssessmentTrendService:
     """Coordinate assessment comparison, trend, and intelligence logic."""
 
-    def __init__(self, query: AssessmentQuery):
-        self.comparison_service = AssessmentComparisonService(query)
+    def __init__(
+        self,
+        comparison_service: AssessmentComparisonService,
+    ):
+        self.comparison_service = comparison_service
         self.trend = AssessmentTrend()
         self.intelligence = AssessmentIntelligence()
 

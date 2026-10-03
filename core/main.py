@@ -56,9 +56,11 @@ class K9Core:
         self,
     ) -> AssessmentTrendService:
         """Return the assessment trend service for configured persistence."""
-        query = self._require_assessment_query()
+        comparison_service = (
+            self._require_assessment_comparison_service()
+        )
 
-        return AssessmentTrendService(query)
+        return AssessmentTrendService(comparison_service)
 
     def load_modules(self, path: str = "config/modules.json"):
         self.loader.load_from_file(path)
