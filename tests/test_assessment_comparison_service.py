@@ -32,6 +32,30 @@ def make_service(tmp_path):
     )
 
 
+def test_service_lists_persisted_targets(tmp_path):
+    persistence, service = make_service(tmp_path)
+
+    persistence.save(
+        make_snapshot(
+            "assessment-001",
+            "host-a",
+            "2026-09-29T12:00:00+00:00",
+        )
+    )
+    persistence.save(
+        make_snapshot(
+            "assessment-002",
+            "host-b",
+            "2026-09-29T13:00:00+00:00",
+        )
+    )
+
+    assert service.list_targets() == [
+        "host-a",
+        "host-b",
+    ]
+
+
 def test_service_compares_two_persisted_snapshots(tmp_path):
     persistence, service = make_service(tmp_path)
 
