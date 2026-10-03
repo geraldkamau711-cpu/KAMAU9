@@ -1,3 +1,4 @@
+from core.assessment_comparison import AssessmentComparisonResult
 from core.assessment_trend_result import AssessmentTrendResult
 
 
@@ -6,7 +7,7 @@ class AssessmentTrend:
 
     def summarise(
         self,
-        comparisons: list[dict],
+        comparisons: list[AssessmentComparisonResult],
     ) -> AssessmentTrendResult:
         """Return deterministic trend information from comparisons."""
 

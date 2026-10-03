@@ -1,3 +1,4 @@
+from core.assessment_comparison import AssessmentComparisonResult
 from core.assessment_trend import AssessmentTrend
 
 
@@ -271,3 +272,23 @@ def test_assessment_trend_result_preserves_dictionary_compatibility():
         "latest_change": 2,
         "latest_direction": "increased",
     }
+
+
+def test_assessment_trend_accepts_typed_comparison_result():
+    comparison = AssessmentComparisonResult(
+        previous_assessment_id="assessment-001",
+        current_assessment_id="assessment-002",
+        target_changed=False,
+        finding_count_change=2,
+        severity_counts={},
+        module_execution_counts={},
+        new_sources=[],
+        removed_sources=[],
+    )
+
+    result = AssessmentTrend().summarise(
+        [comparison],
+    )
+
+    assert result["total_finding_count_change"] == 2
+    assert result["latest_direction"] == "increased"
