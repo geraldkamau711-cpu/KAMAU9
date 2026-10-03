@@ -1664,3 +1664,50 @@ def test_k9_core_assessment_targets_are_derived_from_grouped_snapshots(
         "192.168.1.20",
         "localhost",
     ]
+
+
+def test_k9_core_analyse_assessment_trend_for_target(tmp_path):
+    persistence = AssessmentPersistence(tmp_path)
+    k9 = K9Core(persistence=persistence)
+
+    first = AssessmentSnapshot(
+        assessment_id="assessment-001",
+        target="localhost",
+        started_at="2026-09-29T12:00:00+00:00",
+        finding_count=2,
+        severity_counts={"info": 2},
+        sources=["host_intelligence"],
+    )
+
+    second = AssessmentSnapshot(
+        assessment_id="assessment-002",
+        target="localhost",
+        started_at="2026-09-29T13:00:00+00:00",
+        finding_count=5,
+        severity_counts={"info": 3, "warning": 2},
+        sources=[
+            "host_intelligence",
+            "network_interfaces",
+        ],
+    )
+
+    persistence.save(first)
+    persistence.save(second)
+
+    result = k9.analyse_assessment_trend_for_target(
+        "localhost",
+    )
+
+    assert result == {
+        "state": "increased",
+        "finding_count_change": 3,
+        "latest_direction": "increased",
+        "severity_changes": {
+            "info": 1,
+            "warning": 2,
+        },
+        "source_changes": {
+            "new": 1,
+            "removed": 0,
+        },
+    }
