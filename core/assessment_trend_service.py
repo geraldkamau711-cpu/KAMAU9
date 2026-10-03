@@ -3,6 +3,7 @@ from core.assessment_comparison_service import (
 )
 from core.assessment_intelligence import AssessmentIntelligence
 from core.assessment_trend import AssessmentTrend
+from core.assessment_trend_result import AssessmentTrendResult
 
 
 class AssessmentTrendService:
@@ -20,7 +21,7 @@ class AssessmentTrendService:
     def summarise_assessment_trend_for_target(
         self,
         target: str,
-    ) -> dict:
+    ) -> AssessmentTrendResult:
         """Summarise assessment trends for a target."""
         comparisons = (
             self.comparison_service
@@ -40,7 +41,7 @@ class AssessmentTrendService:
 
     def summarise_assessment_trends_for_all_targets(
         self,
-    ) -> dict[str, dict]:
+    ) -> dict[str, AssessmentTrendResult]:
         """Summarise assessment trends for every persisted target."""
         targets = self.comparison_service.list_targets()
 
