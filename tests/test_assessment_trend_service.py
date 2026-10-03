@@ -197,3 +197,83 @@ def test_service_accepts_assessment_intelligence():
     )
 
     assert service.intelligence is intelligence
+
+
+def test_service_returns_typed_assessment_intelligence_result(tmp_path):
+    from core.assessment_intelligence_result import (
+        AssessmentIntelligenceResult,
+    )
+
+    persistence, service = make_service(tmp_path)
+
+    persistence.save(
+        make_snapshot(
+            "assessment-001",
+            "host-a",
+            "2026-09-29T12:00:00+00:00",
+            2,
+        )
+    )
+    persistence.save(
+        make_snapshot(
+            "assessment-002",
+            "host-a",
+            "2026-09-29T13:00:00+00:00",
+            5,
+        )
+    )
+
+    result = service.analyse_assessment_trend_for_target(
+        "host-a",
+    )
+
+    assert isinstance(result, AssessmentIntelligenceResult)
+    assert result["state"] == "increased"
+
+
+def test_service_returns_typed_intelligence_results_for_all_targets(
+    tmp_path,
+):
+    from core.assessment_intelligence_result import (
+        AssessmentIntelligenceResult,
+    )
+
+    persistence, service = make_service(tmp_path)
+
+    for snapshot in (
+        make_snapshot(
+            "assessment-001",
+            "host-a",
+            "2026-09-29T12:00:00+00:00",
+            1,
+        ),
+        make_snapshot(
+            "assessment-002",
+            "host-a",
+            "2026-09-29T13:00:00+00:00",
+            3,
+        ),
+        make_snapshot(
+            "assessment-003",
+            "host-b",
+            "2026-09-29T14:00:00+00:00",
+            5,
+        ),
+        make_snapshot(
+            "assessment-004",
+            "host-b",
+            "2026-09-29T15:00:00+00:00",
+            4,
+        ),
+    ):
+        persistence.save(snapshot)
+
+    result = service.analyse_assessment_trends_for_all_targets()
+
+    assert all(
+        isinstance(
+            intelligence,
+            AssessmentIntelligenceResult,
+        )
+        for intelligence in result.values()
+    )
