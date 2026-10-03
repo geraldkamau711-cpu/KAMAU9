@@ -41,7 +41,7 @@ class AssessmentTrendService:
         self,
     ) -> dict[str, dict]:
         """Summarise assessment trends for every persisted target."""
-        targets = self.comparison_service.query.list_targets()
+        targets = self.comparison_service.list_targets()
 
         return {
             target: self.summarise_assessment_trend_for_target(
@@ -54,7 +54,7 @@ class AssessmentTrendService:
         self,
     ) -> dict[str, dict]:
         """Analyse assessment trends for every persisted target."""
-        targets = self.comparison_service.query.list_targets()
+        targets = self.comparison_service.list_targets()
 
         return {
             target: self.analyse_assessment_trend_for_target(

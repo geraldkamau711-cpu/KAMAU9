@@ -9,6 +9,10 @@ class AssessmentComparisonService:
         self.query = query
         self.comparison = AssessmentComparison()
 
+    def list_targets(self) -> list[str]:
+        """Return every persisted assessment target."""
+        return self.query.list_targets()
+
     def compare_assessment_snapshots(
         self,
         previous_assessment_id: str,
