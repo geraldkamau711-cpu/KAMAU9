@@ -231,3 +231,49 @@ def test_assessment_intelligence_reports_source_changes():
             "removed": 1,
         },
     }
+
+
+def test_assessment_intelligence_preserves_all_trend_dimensions():
+    result = AssessmentIntelligence().analyse(
+        {
+            "comparison_count": 2,
+            "total_finding_count_change": 3,
+            "increases": 2,
+            "decreases": 0,
+            "unchanged": 0,
+            "latest_change": 1,
+            "latest_direction": "increased",
+            "severity_changes": {
+                "info": 1,
+                "warning": 2,
+            },
+            "module_execution_changes": {
+                "total": 1,
+                "succeeded": 1,
+                "failed": 0,
+            },
+            "source_changes": {
+                "new": 2,
+                "removed": 1,
+            },
+        }
+    )
+
+    assert result == {
+        "state": "increased",
+        "finding_count_change": 3,
+        "latest_direction": "increased",
+        "severity_changes": {
+            "info": 1,
+            "warning": 2,
+        },
+        "module_execution_changes": {
+            "total": 1,
+            "succeeded": 1,
+            "failed": 0,
+        },
+        "source_changes": {
+            "new": 2,
+            "removed": 1,
+        },
+    }
